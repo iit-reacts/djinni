@@ -356,7 +356,7 @@ class PythonGenerator(spec: Spec) extends Generator(spec) {
         }
         case MOptional =>
            tm.args(0).base match {
-             case m @ (MPrimitive(_,_,_,_,_,_,_,_) | MDate) => {
+             case m @ (MPrimitive(_,_,_,_,_,_,_,_,_) | MDate) => {
                python.add("from djinni.pycffi_marshal import CPyBoxed" + idPython.className(m.asInstanceOf[MOpaque].idlName))
              }
              case _ => collect(tm.args(0), justCollect, true)
@@ -511,7 +511,7 @@ class PythonGenerator(spec: Spec) extends Generator(spec) {
             w.wl("with " + marshal.convertFrom(libCall, ret) + " as py_obj:").nested {
               w.wl("return " + marshal.releaseRAII("py_obj", optTy, true)) // here
             } }, true, w)
-          case MPrimitive(_,_,_,_,_,_,_,_) | MDate =>
+          case MPrimitive(_,_,_,_,_,_,_,_,_) | MDate =>
             checkForExceptionFromPython( w=> {
             w.wl("with " + marshal.convertFrom(libCall, ret) + " as py_obj:").nested {
               w.wl("return " + marshal.releaseRAII("py_obj", ret)) // here

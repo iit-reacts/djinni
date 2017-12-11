@@ -75,6 +75,10 @@ object Main {
     var objcFileIdentStyleOptional: Option[IdentConverter] = None
     var objcppNamespace: String = "djinni_generated"
     var objcBaseLibIncludePrefix: String = ""
+    var csOutFolder: Option[File] = None
+    var cppcliOutFolder: Option[File] = None
+    var csIdentStyle = IdentStyle.csDefault
+    var csNamespace: String = ""
     var inFileListPath: Option[File] = None
     var outFileListPath: Option[File] = None
     var skipGeneration: Boolean = false
@@ -194,6 +198,13 @@ object Main {
         .text("The namespace name to use for generated Objective-C++ classes.")
       opt[String]("objc-base-lib-include-prefix").valueName("...").foreach(x => objcBaseLibIncludePrefix = x)
         .text("The Objective-C++ base library's include path, relative to the Objective-C++ classes.")
+      note("")
+      opt[File]("cs-out").valueName("<out-folder>").foreach(x => csOutFolder = Some(x))
+        .text("The output folder for C# files (Generator disabled if unspecified)")
+      opt[String]("cs-namespace").valueName("<prefix>").foreach(csNamespace = _)
+        .text("The namespace name to use for generated C# classes.")
+      opt[File]("cppcli-out").valueName("<out-folder>").foreach(x => cppcliOutFolder = Some(x))
+        .text("The output folder for private C++/CLI files (Generator disabled if unspecified).")
       note("")
       opt[File]("yaml-out").valueName("<out-folder>").foreach(x => yamlOutFolder = Some(x))
         .text("The output folder for YAML files (Generator disabled if unspecified).")
@@ -363,6 +374,10 @@ object Main {
       objcppNamespace,
       objcBaseLibIncludePrefix,
       objcSwiftBridgingHeaderWriter,
+      csOutFolder,
+      cppcliOutFolder,
+      csIdentStyle,
+      csNamespace,
       outFileListWriter,
       skipGeneration,
       yamlOutFolder,

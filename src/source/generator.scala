@@ -75,6 +75,10 @@ package object generatorTools {
                    objcppNamespace: String,
                    objcBaseLibIncludePrefix: String,
                    objcSwiftBridgingHeaderWriter: Option[Writer],
+                   csOutFolder: Option[File],
+                   cppcliOutFolder: Option[File],
+                   csIdentStyle: CsIdentStyle,
+                   csNamespace: String,
                    outFileListWriter: Option[Writer],
                    skipGeneration: Boolean,
                    yamlOutFolder: Option[File],
@@ -112,6 +116,10 @@ package object generatorTools {
                             method: IdentConverter, field: IdentConverter, local: IdentConverter,
                             enum: IdentConverter, const: IdentConverter)
 
+  case class CsIdentStyle(ty: IdentConverter, typeParam: IdentConverter, property: IdentConverter,
+                          method: IdentConverter, field: IdentConverter, local: IdentConverter,
+                          enum: IdentConverter, const: IdentConverter)
+
   case class PythonIdentStyle(ty: IdentConverter, className: IdentConverter, typeParam: IdentConverter,
                             method: IdentConverter, field: IdentConverter, local: IdentConverter,
                             enum: IdentConverter, const: IdentConverter)
@@ -129,6 +137,7 @@ package object generatorTools {
     val javaDefault = JavaIdentStyle(camelUpper, camelUpper, camelLower, camelLower, camelLower, underCaps, underCaps)
     val cppDefault = CppIdentStyle(camelUpper, camelUpper, camelUpper, underLower, underLower, underLower, underCaps, underCaps)
     val objcDefault = ObjcIdentStyle(camelUpper, camelUpper, camelLower, camelLower, camelLower, camelUpper, camelUpper)
+    val csDefault = CsIdentStyle(camelUpper, camelUpper, camelUpper, camelUpper, camelLower, camelLower, underCaps, underCaps)
     val pythonDefault = PythonIdentStyle(underLower, camelUpper, underLower, underLower, underLower, underLower, underUpper, underCaps)
 
     val styles = Map(
@@ -234,6 +243,18 @@ package object generatorTools {
       if (spec.objcSwiftBridgingHeaderWriter.isDefined) {
         SwiftBridgingHeaderGenerator.writeAutogenerationWarning(spec.objcSwiftBridgingHeaderWriter.get)
         new SwiftBridgingHeaderGenerator(spec).generate(idl)
+      }
+      if (spec.csOutFolder.isDefined) {
+        if (!spec.skipGeneration) {
+          createFolder("C#", spec.csOutFolder.get)
+        }
+        new CsGenerator(spec).generate(idl)
+      }
+      if (spec.cppcliOutFolder.isDefined) {
+        if (!spec.skipGeneration) {
+          createFolder("C++/CLI", spec.cppcliOutFolder.get)
+        }
+//        new CppCliGenerator(spec).generate(idl)
       }
       if (spec.yamlOutFolder.isDefined) {
         if (!spec.skipGeneration) {
@@ -355,6 +376,7 @@ abstract class Generator(spec: Spec)
   val idCpp = spec.cppIdentStyle
   val idJava = spec.javaIdentStyle
   val idObjc = spec.objcIdentStyle
+  val idCs = spec.csIdentStyle
   val idPython = spec.pyIdentStyle
 
   def wrapNamespace(w: IndentWriter, ns: String, f: IndentWriter => Unit) {
