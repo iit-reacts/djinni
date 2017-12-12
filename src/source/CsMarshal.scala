@@ -1,5 +1,7 @@
 package djinni
 
+import djinni.ast.Record.DerivingType
+import djinni.ast.Record.DerivingType.DerivingType
 import djinni.ast._
 import djinni.generatorTools._
 import djinni.meta._
@@ -32,6 +34,12 @@ class CsMarshal(spec: Spec) extends Marshal(spec) {
         case MDate => List(ImportRef("System"))
         case _ => List()
       }
+    case _ => List()
+  }
+
+  def references(d: DerivingType): Seq[SymbolReference] = d match {
+    case DerivingType.Eq => List(ImportRef("System"))
+    case DerivingType.Ord => List(ImportRef("System"))
     case _ => List()
   }
 
