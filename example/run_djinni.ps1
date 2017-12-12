@@ -16,14 +16,14 @@ $cppcli_out = "$base_dir\generated-src\cppcli"
 
 $deps_file = "$temp_out\$djinnifile.deps"
 
-echo "base_dir = $base_dir"
-echo "djinni_dir = $djinni_dir"
-echo "djinnifile = $djinnifile"
-echo "in = $in"
-echo "cpp_out = $cpp_out"
-echo "cs_out = $cs_out"
-echo "cppcli_out = $cppcli_out"
-echo "deps_file = $deps_file"
+#echo "base_dir = $base_dir"
+#echo "djinni_dir = $djinni_dir"
+#echo "djinnifile = $djinnifile"
+#echo "in = $in"
+#echo "cpp_out = $cpp_out"
+#echo "cs_out = $cs_out"
+#echo "cppcli_out = $cppcli_out"
+#echo "deps_file = $deps_file"
 
 if ($clean) {
     # TODO!
@@ -42,7 +42,7 @@ if (Test-Path $temp_out) {
     Remove-Item -Recurse -Force $temp_out
 }
 
-echo "D:\Dev\djinni\src\target\start.bat --cpp-out `"$temp_out/cpp`" --cpp-namespace textsort --ident-cpp-enum-type foo_bar --cpp-optional-template std::experimental::optional --cpp-optional-header `"^^^<experimental/optional^^^>`" --cs-out `"$temp_out/cs`" --cs-namespace textsort --cppcli-out `"$temp_out/cppcli`" --idl `"$in`" --list-in-files `"$deps_file.tmp`""
+#echo "D:\Dev\djinni\src\target\start.bat --cpp-out `"$temp_out/cpp`" --cpp-namespace textsort --ident-cpp-enum-type foo_bar --cpp-optional-template std::experimental::optional --cpp-optional-header `"^^^<experimental/optional^^^>`" --cs-out `"$temp_out/cs`" --cs-namespace textsort --cppcli-out `"$temp_out/cppcli`" --idl `"$in`" --list-in-files `"$deps_file.tmp`""
 
 & "D:\Dev\djinni\src\target\start.bat" `
     --cpp-out "$temp_out/cpp" `

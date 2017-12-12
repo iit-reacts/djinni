@@ -77,7 +77,7 @@ package object generatorTools {
                    objcBaseLibIncludePrefix: String,
                    objcSwiftBridgingHeaderWriter: Option[Writer],
                    csOutFolder: Option[File],
-                   cppcliOutFolder: Option[File],
+                   cppCliOutFolder: Option[File],
                    csIdentStyle: CsIdentStyle,
                    csNamespace: String,
                    outFileListWriter: Option[Writer],
@@ -234,11 +234,11 @@ package object generatorTools {
         }
         new CsGenerator(spec).generate(idl)
       }
-      if (spec.cppcliOutFolder.isDefined) {
+      if (spec.cppCliOutFolder.isDefined) {
         if (!spec.skipGeneration) {
-          createFolder("C++/CLI", spec.cppcliOutFolder.get)
+          createFolder("C++/CLI", spec.cppCliOutFolder.get)
         }
-//        new CppCliGenerator(spec).generate(idl)
+        new CppCliGenerator(spec).generate(idl)
       }
       if (spec.yamlOutFolder.isDefined) {
         if (!spec.skipGeneration) {
