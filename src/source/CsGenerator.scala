@@ -1,5 +1,7 @@
 package djinni
 
+import djinni.ast.Record.DerivingType
+import djinni.ast.Record.DerivingType.DerivingType
 import djinni.ast._
 import djinni.generatorTools._
 import djinni.meta._
@@ -14,6 +16,10 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
   class CsRefs() {
     var cs = mutable.TreeSet[String]()
 
+    def find(d: DerivingType) = for(r <- marshal.references(d)) r match {
+      case ImportRef(arg) => cs.add(arg)
+      case _ =>
+    }
     def find(ty: TypeRef) { find(ty.resolved) }
     def find(tm: MExpr) {
       tm.args.foreach(find)
@@ -43,7 +49,7 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
 
     createCsFile(origin, ident, refs.cs, w => {
       writeDoc(w, doc)
-      w.w(s"public enum ${marshal.typename(ident, e)}:int").braced {
+      w.w(s"public enum ${marshal.typename(ident, e)}").braced {
         for (o <- e.options) {
           writeDoc(w, o.doc)
           w.wl(idCs.enum(o.ident.name) + ",")
@@ -52,21 +58,68 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
     })
   }
 
+
   def generateCsConstants(w: IndentWriter, consts: Seq[Const]): Unit = {
-    w.wl(s"// TODO generate constants")
+    def writeCsConst(w: IndentWriter, ty: TypeRef, v: Any): Unit = v match {
+      case l: Long if List("long", "long?").contains(marshal.fieldType(ty)) => w.w(l.toString + "L")
+      case l: Long => w.w(l.toString)
+      case d: Double if marshal.fieldType(ty).equals("float") => w.w(d.toString + "F")
+      case d: Double if marshal.fieldType(ty).equals("float?") => w.w(d.toString + "F")
+      case d: Double => w.w(d.toString)
+      case b: Boolean => w.w(if (b) "true" else "false")
+      case s: String => w.w(s)
+      case e: EnumValue =>  w.w(s"${marshal.typename(ty)}.${idCs.enum(e)}")
+      case v: ConstRef => w.w(idCs.const(v))
+      case z: Map[_, _] => { // Value is record
+        val recordMdef = ty.resolved.base.asInstanceOf[MDef]
+        val record = recordMdef.body.asInstanceOf[Record]
+        val vMap = z.asInstanceOf[Map[String, Any]]
+        w.wl(s"new ${marshal.typename(ty)}(")
+        w.increase()
+        // Use exact sequence
+        val skipFirst = SkipFirst()
+        for (f <- record.fields) {
+          skipFirst {w.wl(",")}
+          writeCsConst(w, f.ty, vMap.apply(f.ident.name))
+          w.w(" /* " + idCs.field(f.ident) + " */ ")
+        }
+        w.w(")")
+        w.decrease()
+      }
+    }
+
+    for (c <- consts) {
+      w.wl
+      writeDoc(w, c.doc)
+      val const = c.value match {
+        case _: MPrimitive => "const"
+        case _ => "static readonly"
+      }
+      w.w(s"public $const ${marshal.fieldType(c.ty)} ${idCs.const(c.ident)} = ")
+      writeCsConst(w, c.ty, c.value)
+      w.wl(";")
+    }
   }
 
   override def generateRecord(origin: String, ident: Ident, doc: Doc, params: Seq[TypeParam], r: Record) {
     val refs = new CsRefs()
     r.fields.foreach(f => refs.find(f.ty))
+    r.derivingTypes.foreach(d => refs.find(d))
 
     val self = marshal.typename(ident, r)
 
     createCsFile(origin, ident, refs.cs, w => {
       writeDoc(w, doc)
 
-      w.w(s"public class $self").braced {
-        w.wl
+      val inheritanceList = if (r.derivingTypes.nonEmpty) {
+        r.derivingTypes.map {
+          case DerivingType.Eq => s"IEquatable<$self>"
+          case DerivingType.Ord => s"IComparable<$self>"
+          case _ => throw new AssertionError("unreachable")
+        }.mkString(": ", ", ", "")
+      } else ""
+
+      w.w(s"public class $self$inheritanceList").braced {
         generateCsConstants(w, r.consts)
         // Properties.
         for (f <- r.fields) {
@@ -75,48 +128,98 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
         }
 
         // Constructor.
-        w.wl
-        w.wl(s"public $self(").nestedN(2) {
-          val skipFirst = SkipFirst()
-          for (f <- r.fields) {
-            skipFirst { w.wl(",") }
-            w.w(marshal.typename(f.ty) + " " + idCs.local(f.ident))
+        if (r.fields.nonEmpty) {
+          w.wl
+          w.wl(s"public $self(").nestedN(2) {
+            val skipFirst = SkipFirst()
+            for (f <- r.fields) {
+              skipFirst { w.wl(",") }
+              w.w(marshal.typename(f.ty) + " " + idCs.local(f.ident))
+            }
+            w.wl(") {")
           }
-          w.wl(") {")
-        }
-        w.nested {
-          for (f <- r.fields) {
-            w.wl(s"${idCs.property(f.ident)} = ${idCs.local(f.ident)};")
+          w.nested {
+            for (f <- r.fields) {
+              w.wl(s"${idCs.property(f.ident)} = ${idCs.local(f.ident)};")
+            }
           }
+          w.wl("}")
         }
-        w.wl("}")
 
         w.wl
-        w.w(s"""public override string ToString() => $$"${self}[""")
+        w.w(s"""public override string ToString() => $$"$self[""")
         val skipFirst = SkipFirst()
         for (f <- r.fields) {
-          val name = idCs.property(f.ident)
+          val property = idCs.property(f.ident)
           skipFirst { w.w(", ") }
-          w.w(s"${name}={${name}}")
+          w.w(s"$property={$property}")
         }
         w.wl(s"""]";""")
 
-        w.wl
-        w.wl(s"// TODO deriving types! (Eq)")
+        if (r.derivingTypes.contains(DerivingType.Eq)) {
+          w.wl
+          w.w(s"public bool Equals($self other)").braced {
+            w.wl("if (ReferenceEquals(null, other)) return false;")
+            w.wl("if (ReferenceEquals(this, other)) return true;")
+            w.wl(r.fields.map(f => {
+              val property = idCs.property(f.ident)
+              f.ty.resolved.base match {
+                case p: MPrimitive if !List("float", "double").contains(p.csName) => s"$property == other.$property"
+                case _ => s"$property.Equals(other.$property)"
+              }
+            }).mkString("return ", " && ", ";"))
+          }
 
-        w.wl
-        w.wl(s"// TODO deriving types! (Ord)")
+          w.wl
+          w.w("public override bool Equals(object obj)").braced {
+            w.wl("if (ReferenceEquals(null, obj)) return false;")
+            w.wl("if (ReferenceEquals(this, obj)) return true;")
+            w.wl(s"return obj.GetType() == GetType() && Equals(($self) obj);")
+          }
+
+          w.wl
+          w.w("public override int GetHashCode()").braced {
+            w.wl("unchecked").braced {
+              w.wl(s"var hashCode = ${idCs.property(r.fields.head.ident)}.GetHashCode();")
+              for (f <- r.fields.tail) {
+                w.wl(s"hashCode = (hashCode * 397) ^ ${idCs.property(f.ident)}.GetHashCode();")
+              }
+              w.wl("return hashCode;")
+            }
+          }
+        }
+
+        if (r.derivingTypes.contains(DerivingType.Ord)) {
+          def compare(f: Field): String = {
+            val property = idCs.property(f.ident)
+            f.ty.resolved.base match {
+              case MString => s"string.Compare($property, other.$property, StringComparison.Ordinal)"
+              case _ => s"$property.CompareTo(other.$property)"
+            }
+          }
+          w.wl
+          w.w(s"public int CompareTo($self other)").braced {
+            w.wl("if (ReferenceEquals(this, other)) return 0;")
+            w.wl("if (ReferenceEquals(null, other)) return 1;")
+            for (f <- r.fields.dropRight(1)) {
+              val local = idCs.local(f.ident) + "Comparison"
+              w.wl(s"var $local = ${compare(f)};")
+              w.wl(s"if ($local != 0) return $local;")
+            }
+            w.wl(s"return ${compare(r.fields.last)};")
+          }
+        }
       }
     })
   }
 
   override def generateInterface(origin: String, ident: Ident, doc: Doc, typeParams: Seq[TypeParam], i: Interface) {
     val refs = new CsRefs()
-    i.methods.map(m => {
-      m.params.map(p => refs.find(p.ty))
+    i.methods.foreach(m => {
+      m.params.foreach(p => refs.find(p.ty))
 //      m.ret.foreach((x)=>refs.find(x))
     })
-    i.consts.map(c => {
+    i.consts.foreach(c => {
 //      refs.find(c.ty)
     })
 
