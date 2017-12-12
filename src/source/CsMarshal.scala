@@ -38,27 +38,36 @@ class CsMarshal(spec: Spec) extends Marshal(spec) {
   def toCsType(ty: TypeRef): String = toCsType(ty.resolved)
 
   def toCsType(tm: MExpr): String = {
-    def base(tm: Meta): String = tm match {
-      case p: MPrimitive => p.csName
-      case MString => "string"
-      case MDate => "Date"
-      case MBinary => "Bin"
-      case MOptional => "Nullable"
-      case MList => "List"
-      case MSet => "Set"
-      case MMap => "Map"
-      case d: MDef => idCs.ty(d.name)
-      case e: MExtern => throw new AssertionError("unreachable")
-      case p: MParam => idCs.typeParam(p.name)
-    }
-    def expr(tm: MExpr): String = {
-      if (isOptionalInterface(tm)) {
-        expr(tm.args.head)
-      } else {
-        val args = if (tm.args.isEmpty) "" else tm.args.map(expr).mkString("<", ", ", ">")
-        base(tm.base) + args
+    def args(tm: MExpr) = if (tm.args.isEmpty) "" else tm.args.map(f(_, true)).mkString("<", ", ", ">")
+    def f(tm: MExpr, needRef: Boolean): String = {
+      tm.base match {
+        case MOptional =>
+          // HACK: We use "null" for the empty optional in Java.
+          assert(tm.args.size == 1)
+          val arg = tm.args.head
+          arg.base match {
+            case p: MPrimitive => p.csName + "?"
+            case MOptional => throw new AssertionError("nested optional?")
+            case m => f(arg, true)
+          }
+        case e: MExtern => throw new AssertionError("unreachable")
+        case o =>
+          val base = o match {
+            case p: MPrimitive => p.csName
+            case MString => "string"
+            case MDate => "DateTime"
+            case MBinary => "byte[]"
+            case MOptional => throw new AssertionError("optional should have been special cased")
+            case MList => "List"
+            case MSet => "HashSet"
+            case MMap => "Dictionary"
+            case d: MDef => idCs.ty(d.name)
+            case e: MExtern => throw new AssertionError("unreachable")
+            case p: MParam => idCs.typeParam(p.name)
+          }
+          base + args(tm)
       }
     }
-    expr(tm)
+    f(tm, false)
   }
 }

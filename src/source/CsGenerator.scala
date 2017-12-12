@@ -92,9 +92,6 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
         w.wl("}")
 
         w.wl
-        w.wl(s"// TODO deriving types! (Eq)")
-
-        w.wl
         w.w(s"""public override string ToString() => $$"${self}[""")
         val skipFirst = SkipFirst()
         for (f <- r.fields) {
@@ -105,6 +102,9 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
         w.wl(s"""]";""")
 
         w.wl
+        w.wl(s"// TODO deriving types! (Eq)")
+
+        w.wl
         w.wl(s"// TODO deriving types! (Ord)")
       }
     })
@@ -112,6 +112,13 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
 
   override def generateInterface(origin: String, ident: Ident, doc: Doc, typeParams: Seq[TypeParam], i: Interface) {
     val refs = new CsRefs()
+    i.methods.map(m => {
+      m.params.map(p => refs.find(p.ty))
+//      m.ret.foreach((x)=>refs.find(x))
+    })
+    i.consts.map(c => {
+//      refs.find(c.ty)
+    })
 
     if (i.ext.cpp) return 
 
