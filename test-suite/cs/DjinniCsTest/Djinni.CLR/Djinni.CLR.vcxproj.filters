@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="Djinni.CLR.h" />
+    <ClInclude Include="Stdafx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="Djinni.CLR.cpp" />
+    <ClCompile Include="Stdafx.cpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+  </ItemGroup>
+</Project>
