@@ -217,13 +217,11 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
     val refs = new CsRefs()
     i.methods.foreach(m => {
       m.params.foreach(p => refs.find(p.ty))
-//      m.ret.foreach((x)=>refs.find(x))
+//      ident.ret.foreach((x)=>refs.find(x))
     })
     i.consts.foreach(c => {
 //      refs.find(c.ty)
     })
-
-    if (i.ext.cpp) return 
 
     createCsFile(origin, ident, refs.cs, w => {
       val self = marshal.typename(ident, i)
@@ -232,15 +230,6 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
       w.w(s"public abstract class $self").braced {
         generateCsConstants(w, i.consts)
 
-        for (m <- i.methods if !m.static) {
-          w.wl
-          writeDoc(w, m.doc)
-          val ret = marshal.returnType(m.ret)
-          val params = m.params.map(p => {
-            marshal.paramType(p.ty) + " " + idCs.local(p.ident)
-          })
-          w.wl("public abstract " + ret + " " + idCs.method(m.ident) + params.mkString("(", ", ", ");"))
-        }
         for (m <- i.methods if m.static) {
           w.wl
           writeDoc(w, m.doc)
@@ -248,11 +237,26 @@ class CsGenerator(spec: Spec) extends Generator(spec) {
           val params = m.params.map(p => {
             marshal.paramType(p.ty) + " " + idCs.local(p.ident)
           })
-          w.wl("public static "+ ret + " " + idCs.method(m.ident) + params.mkString("(", ", ", ")") + ";")
+          w.wl("public static "+ ret + " " + idCs.method(m.ident) + params.mkString("(", ", ", ")")).braced {
+
+          }
+        }
+        for (m <- i.methods if !m.static) {
+          w.wl
+          writeDoc(w, m.doc)
+          val ret = marshal.returnType(m.ret)
+          val params = m.params.map(p => {
+            marshal.paramType(p.ty) + " " + idCs.local(p.ident)
+          })
+          w.wl("public abstract " + ret + " " + methodPrefix(ident, m.ident) + idCs.method(m.ident) + params.mkString("(", ", ", ");"))
         }
       }
     })
 
     // TODO
+  }
+
+  private def methodPrefix(typeIdent: Ident, methodIdent: Ident): String = {
+    if (typeIdent.name == methodIdent.name) "Do" else ""
   }
 }

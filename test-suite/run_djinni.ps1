@@ -75,18 +75,17 @@ cd $base_dir
 #    `
 #    --idl "$wchar_in_relative"
 
-
-& "$base_dir\..\src\target\start.bat" `
-    --cpp-out "$temp_out_relative/cpp" `
-    --cpp-namespace testsuite `
-    --ident-cpp-enum-type foo_bar `
-    --cpp-optional-template "std::experimental::optional" `
-    --cpp-optional-header "`"../../handwritten-src/cpp/optional.hpp`"" `
-    --cpp-extended-record-include-prefix "../../handwritten-src/cpp/" `
-    `
-    --cs-out "$temp_out/cs" `
-    --cs-namespace Djinni.TextSort `
-    --cppcli-out "$temp_out/cppcli" `
-    `
-    --idl "$in_relative" `
-    --idl-include-path "djinni/vendor"
+#& "$base_dir\..\src\target\start.bat" `
+#    --cpp-out "$temp_out_relative/cpp" `
+#    --cpp-namespace testsuite `
+#    --ident-cpp-enum-type foo_bar `
+#    --cpp-optional-template "std::experimental::optional" `
+#    --cpp-optional-header "`"../../handwritten-src/cpp/optional.hpp`"" `
+#    --cpp-extended-record-include-prefix "../../handwritten-src/cpp/" `
+#    `
+#    --cs-out "$temp_out/cs" `
+#    --cs-namespace Djinni.TestSuite `
+#    --cppcli-out "$temp_out/cppcli" `
+#    `
+#    --idl "$in_relative" `
+#    --idl-include-path "djinni/vendor"
