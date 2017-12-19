@@ -37,19 +37,13 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
     q(spec.csIdentStyle.ty(ident) + "." + spec.cppHeaderExt)
   }
 
-  def references(m: Meta): Seq[SymbolReference] = m match {
-    case o: MOpaque =>
-      o match {
-        case MString => List(using("System::String"))
-        case MBinary => List(using("System::Byte"))
-        case MList => List(using("System::Collections::Generic::List"))
-        case MSet => List(using("System::Collections::Generic::HashSet"))
-        case MMap => List(using("System::Collections::Generic::Dictionary"))
-        case MDate => List(using("System::DateTime"))
-        case _ => List()
-      }
+  def references(m: Meta, exclude: String): Seq[SymbolReference] = m match {
     case d: MDef =>
-      List(ImportRef(include(d.name)))
+      if (d.name != exclude) {
+        List(ImportRef(include(d.name)))
+      } else {
+        List()
+      }
     case _ => List()
   }
 
@@ -60,7 +54,6 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
         using("System::Object"),
         using("System::String")
       )
-    case DerivingType.Ord => List(using("System::IComparable"))
     case _ => List()
   }
 
@@ -88,6 +81,8 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
               case DEnum => ""
               case _ => "^"
             }
+          case MOptional => ""
+          case MDate => ""
           case _ => "^"
         }
       } else ""
@@ -99,20 +94,26 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
           assert(tm.args.size == 1)
           val arg = tm.args.head
           arg.base match {
-            case _: MPrimitive => "System::Nullable" + args + handle(tm.base)
+            case _: MPrimitive => "System::Nullable" + args
+            case MDate => "System::Nullable" + args
+            case d: MDef =>
+              d.defType match {
+                case DEnum => "System::Nullable" + args
+                case _ => expr(arg)
+              }
             case _ => expr(arg)
           }
         case e: MExtern => throw new AssertionError("unreachable")
         case o =>
           val base = o match {
             case p: MPrimitive => p.cppCliName
-            case MString => "String"
-            case MDate => "DateTime"
-            case MBinary => "array<Byte>"
+            case MString => "System::String"
+            case MDate => "System::DateTime"
+            case MBinary => "array<System::Byte>"
             case MOptional => throw new AssertionError("optional should have been special cased")
-            case MList => "List"
-            case MSet => "HashSet"
-            case MMap => "Dictionary"
+            case MList => "System::Collections::Generic::List"
+            case MSet => "System::Collections::Generic::HashSet"
+            case MMap => "System::Collections::Generic::Dictionary"
             case d: MDef => withNamespace(idCs.ty(d.name))
             case e: MExtern => throw new AssertionError("unreachable")
             case p: MParam => idCs.typeParam(p.name)
