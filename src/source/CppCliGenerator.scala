@@ -13,7 +13,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
 
   val marshal = new CppCliMarshal(spec)
 
-  class CppCliRefs() {
+  class CppCliRefs(name: String) {
     val hpp = new mutable.TreeSet[String]()
     val hppFwds = new mutable.TreeSet[String]()
 
@@ -23,7 +23,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       tm.args.foreach(find)
       find(tm.base)
     }
-    def find(m: Meta) = for(r <- marshal.references(m)) addRefs(r)
+    def find(m: Meta) = for(r <- marshal.references(m, name)) addRefs(r)
 
     private def addRefs(r: SymbolReference) = r match {
       case ImportRef(arg) => hpp.add("#include " + arg)
@@ -68,8 +68,8 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       }
     }
     def writeCppCliConst(w: IndentWriter, ty: TypeRef, v: Any): Unit = ty.resolved.base match {
-      case MOptional =>
-        w.w(s"gcnew ${marshal.typename(ty, false)}(")
+      case MOptional if ty.resolved.args.head.base != MString =>
+        w.w(marshal.typename(ty, false) + "(")
         writeCppCliLiteral(ty, v)
         w.w(")")
       case _ => writeCppCliLiteral(ty, v)
@@ -108,11 +108,21 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
   }
 
   override def generateEnum(origin: String, ident: Ident, doc: Doc, e: Enum) {
-    // TODO
+    val refs = new CppCliRefs(ident.name)
+
+    writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
+      writeDoc(w, doc)
+      w.w(s"public enum class ${marshal.typename(ident, e)}").bracedSemi {
+        for (o <- e.options) {
+          writeDoc(w, o.doc)
+          w.wl(idCs.enum(o.ident.name) + ",")
+        }
+      }
+    })
   }
 
   override def generateRecord(origin: String, ident: Ident, doc: Doc, params: Seq[TypeParam], r: Record) {
-    val refs = new CppCliRefs()
+    val refs = new CppCliRefs(ident.name)
     refs.find(MString) // for: String^ ToString();
     r.fields.foreach(f => refs.find(f.ty))
     r.consts.foreach(c => refs.find(c.ty))
@@ -126,7 +136,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       val inheritanceList = if (r.derivingTypes.nonEmpty) {
         r.derivingTypes.map {
           case DerivingType.Eq => s"IEquatable<$self^>"
-          case DerivingType.Ord => s"IComparable<$self^>"
+          case DerivingType.Ord => s"System::IComparable<$self^>"
           case _ => throw new AssertionError("unreachable")
         }.mkString(" : ", ", ", "")
       } else ""
@@ -141,8 +151,10 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           w.wl
           val retType = s"${marshal.fieldType(f.ty)}"
           w.wl(s"property $retType ${idCs.property(f.ident)}").braced {
-            w.wl(s"$retType get();")
-            // TODO Implementation!
+            w.wl(s"$retType get()").braced {
+              // TODO Implementation!
+              w.wl(s"return ${dummyConstant(f.ty)};")
+            }
           }
         }
 
@@ -158,13 +170,15 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         }
 
         w.wl
-        w.wl(s"String^ ToString() override").braced {
+        w.wl(s"System::String^ ToString() override").braced {
           w.wl(s"""return "$self[TODO]"; // TODO""")
         }
 
         def call(f: Field) = {
           f.ty.resolved.base match {
             case p: MPrimitive => "."
+            case MOptional => "."
+            case MDate => "."
             case _ => "->"
           }
         }
@@ -178,7 +192,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
               val property = idCs.property(f.ident)
               f.ty.resolved.base match {
                 case p: MPrimitive => s"$property == other->$property"
-                case _ => s"$property->Equals(other->$property)"
+                case _ => s"$property${call(f)}Equals(other->$property)"
               }
             }).mkString("return ", " && ", ";"))
           }
@@ -204,17 +218,17 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           def compare(f: Field): String = {
             val property = idCs.property(f.ident)
             f.ty.resolved.base match {
-              case MString => s"string.Compare($property, other.$property, StringComparison.Ordinal)"
-              case _ => s"$property.CompareTo(other.$property)"
+              case MString => s"System::String::Compare($property, other->$property, System::StringComparison::Ordinal)"
+              case _ => s"$property${call(f)}CompareTo(other->$property)"
             }
           }
           w.wl
-          w.w(s"int CompareTo($self other)").braced {
+          w.w(s"virtual int CompareTo($self^ other)").braced {
             w.wl("if (ReferenceEquals(this, other)) return 0;")
-            w.wl("if (ReferenceEquals(null, other)) return 1;")
+            w.wl("if (ReferenceEquals(nullptr, other)) return 1;")
             for (f <- r.fields.dropRight(1)) {
               val local = idCs.local(f.ident) + "Comparison"
-              w.wl(s"var $local = ${compare(f)};")
+              w.wl(s"auto $local = ${compare(f)};")
               w.wl(s"if ($local != 0) return $local;")
             }
             w.wl(s"return ${compare(r.fields.last)};")
@@ -234,15 +248,10 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
   }
 
   override def generateInterface(origin: String, ident: Ident, doc: Doc, typeParams: Seq[TypeParam], i: Interface) {
-    if (!i.ext.cpp) return
-
-    val refs = new CppCliRefs()
+    val refs = new CppCliRefs(ident.name)
     i.methods.foreach(m => {
       m.params.foreach(p => refs.find(p.ty))
       m.ret.foreach((x) => refs.find(x))
-    })
-    i.consts.foreach(c => {
-      //      refs.find(c.ty)
     })
 
     val methodNamesInScope = i.methods.map(m => idCs.method(m.ident))
@@ -252,16 +261,51 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       w.w(s"public ref class $self").bracedSemi {
         i.methods.foreach(m => {
           w.wl
-          val ret = marshal.returnType(m.ret)
           val static = if (m.static) "static " else ""
           val params = m.params.map(p => {
             marshal.paramType(p.ty, methodNamesInScope) + " " + idCs.local(p.ident)
           })
-          w.w(static + ret + " " + idCs.method(m.ident) + params.mkString("(", ", ", ")")).braced {
-
+          // Protect against conflicts with the class name.
+          val origMethodName = idCs.method(m.ident)
+          val methodName = if (self == origMethodName) "Do" + origMethodName else origMethodName
+          w.w(static + marshal.returnType(m.ret) + " " + methodName + params.mkString("(", ", ", ")")).braced {
+            // TODO Implementation!
+            if (m.ret.isDefined) {
+              w.wl(s"return ${dummyConstant(m.ret.get)};")
+            }
           }
         })
       }
     })
+  }
+
+  private def dummyConstant(ret: TypeRef) = {
+    val typeStr = marshal.typename(ret)
+    val value = ret.resolved.base match {
+      case p: MPrimitive =>
+        p.cppCliName match {
+          case "double" => "0.0"
+          case _ => "0"
+        }
+      case d: MDef =>
+        d.defType match {
+          case DEnum => s"(${typeStr})0"
+          case _ => "nullptr"
+        }
+      case MDate => typeStr + "()"
+      case MOptional =>
+        ret.resolved.args.head.base match {
+          case _: MPrimitive => typeStr + "()"
+          case MDate => typeStr + "()"
+          case d: MDef =>
+            d.defType match {
+              case DEnum => typeStr + "()"
+              case _ => "nullptr"
+            }
+          case _ => "nullptr"
+        }
+      case _ => "nullptr"
+    }
+    value
   }
 }
