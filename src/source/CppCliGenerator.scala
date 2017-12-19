@@ -259,6 +259,8 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
       val self = marshal.typename(ident, i)
       w.w(s"public ref class $self").bracedSemi {
+        w.wlOutdent("public:")
+        
         i.methods.foreach(m => {
           w.wl
           val static = if (m.static) "static " else ""

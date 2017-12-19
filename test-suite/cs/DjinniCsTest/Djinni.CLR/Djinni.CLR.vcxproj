@@ -133,14 +133,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Djinni.CLR.h" />
     <ClInclude Include="Stdafx.h" />
     <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.cpp" />
     <ClCompile Include="AssemblyInfo.cpp" />
-    <ClCompile Include="Djinni.CLR.cpp" />
     <ClCompile Include="Stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
