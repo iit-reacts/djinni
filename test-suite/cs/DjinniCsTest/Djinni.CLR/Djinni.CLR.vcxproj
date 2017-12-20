@@ -74,15 +74,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -134,7 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Stdafx.h" />
-    <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClInclude Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.cpp" />
@@ -145,6 +149,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Djinni.Cpp\Djinni.Cpp.vcxproj">
+      <Project>{3b812773-0385-44f2-bbbd-80f79820e35f}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

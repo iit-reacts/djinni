@@ -30,3 +30,6 @@ jni:
   header: '"Marshal.hpp"'
   typename: jobject
   typeSignature: 'Ljava/util/Date;'
+cs:
+  typename: 'System::DateTime'
+  reference: false

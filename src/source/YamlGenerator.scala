@@ -215,7 +215,10 @@ object YamlGenerator {
       nested(td, "jni")("translator").toString,
       nested(td, "jni")("header").toString,
       nested(td, "jni")("typename").toString,
-      nested(td, "jni")("typeSignature").toString)
+      nested(td, "jni")("typeSignature").toString),
+    MExtern.Cs(
+      nested(td, "cs")("typename").toString,
+      nested(td, "cs")("reference").asInstanceOf[Boolean])
   )
 
   private def nested(td: ExternTypeDecl, key: String) = {
