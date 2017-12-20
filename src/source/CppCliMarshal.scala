@@ -83,6 +83,7 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
             }
           case MOptional => ""
           case MDate => ""
+          case e: MExtern => if (e.cs.reference) "^" else ""
           case _ => "^"
         }
       } else ""
@@ -101,22 +102,28 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
                 case DEnum => "System::Nullable" + args
                 case _ => expr(arg)
               }
+            case e: MExtern =>
+              if (e.cs.reference) {
+                expr(arg)
+              } else {
+                "System::Nullable" + args
+              }
             case _ => expr(arg)
           }
-        case e: MExtern => throw new AssertionError("unreachable")
+        case e: MExtern => withNamespace(e.cs.typename)
         case o =>
           val base = o match {
             case p: MPrimitive => p.cppCliName
             case MString => "System::String"
             case MDate => "System::DateTime"
             case MBinary => "array<System::Byte>"
-            case MOptional => throw new AssertionError("optional should have been special cased")
             case MList => "System::Collections::Generic::List"
             case MSet => "System::Collections::Generic::HashSet"
             case MMap => "System::Collections::Generic::Dictionary"
             case d: MDef => withNamespace(idCs.ty(d.name))
-            case e: MExtern => throw new AssertionError("unreachable")
             case p: MParam => idCs.typeParam(p.name)
+            case MOptional => throw new AssertionError("optional should have been special cased")
+            case _: MExtern => throw new AssertionError("optional should have been special cased")
           }
           base + args + handle(o)
       }
