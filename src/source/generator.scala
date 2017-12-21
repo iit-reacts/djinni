@@ -109,7 +109,7 @@ package object generatorTools {
 
   case class CsIdentStyle(ty: IdentConverter, typeParam: IdentConverter, property: IdentConverter,
                           method: IdentConverter, field: IdentConverter, local: IdentConverter,
-                          enum: IdentConverter, const: IdentConverter)
+                          enum: IdentConverter, const: IdentConverter, file: IdentConverter)
 
   object IdentStyle {
     val camelUpper = (s: String) => s.split('_').map(firstUpper).mkString
@@ -125,7 +125,7 @@ package object generatorTools {
     val javaDefault = JavaIdentStyle(camelUpper, camelUpper, camelLower, camelLower, camelLower, underCaps, underCaps)
     val cppDefault = CppIdentStyle(camelUpper, camelUpper, camelUpper, underLower, underLower, underLower, underCaps, underCaps)
     val objcDefault = ObjcIdentStyle(camelUpper, camelUpper, camelLower, camelLower, camelLower, camelUpper, camelUpper)
-    val csDefault = CsIdentStyle(camelUpper, camelUpper, camelUpper, camelUpper, camelLower, camelLower, camelUpper, camelUpper)
+    val csDefault = CsIdentStyle(camelUpper, camelUpper, camelUpper, camelUpper, camelLower, camelLower, camelUpper, camelUpper, prefix("Cs", camelUpper))
 
     val styles = Map(
       "FooBar" -> camelUpper,

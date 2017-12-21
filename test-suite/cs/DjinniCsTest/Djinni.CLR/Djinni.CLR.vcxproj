@@ -74,19 +74,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;D:\Dev\djinni\test-suite\handwritten-src\cpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;D:\Dev\djinni\test-suite\handwritten-src\cpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;D:\Dev\djinni\test-suite\handwritten-src\cpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Dev\djinni\support-lib\cppcli;D:\Dev\djinni\test-suite\djinni-output-temp\cpp;D:\Dev\djinni\test-suite\handwritten-src\cpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -139,9 +139,11 @@
   <ItemGroup>
     <ClInclude Include="Stdafx.h" />
     <ClInclude Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
+    <ClInclude Include="..\..\..\..\support-lib\cppcli\*.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\djinni-output-temp\cppcli\*.cpp" />
+    <ClCompile Include="..\..\..\..\support-lib\cppcli\*.cpp" />
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="Stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

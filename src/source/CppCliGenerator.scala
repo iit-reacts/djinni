@@ -12,10 +12,12 @@ import scala.collection.mutable
 class CppCliGenerator(spec: Spec) extends Generator(spec) {
 
   val marshal = new CppCliMarshal(spec)
+  val cppMarshal = new CppMarshal(spec)
 
   class CppCliRefs(name: String) {
     val hpp = new mutable.TreeSet[String]()
     val hppFwds = new mutable.TreeSet[String]()
+    val cpp = new mutable.TreeSet[String]()
 
     def find(d: DerivingType) = for(r <- marshal.references(d)) addRefs(r)
     def find(ty: TypeRef) { find(ty.resolved) }
@@ -32,10 +34,10 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     }
   }
 
-  val writeCppCliCppFile = writeCppFileGeneric(spec.cppCliOutFolder.get, spec.csNamespace.replace(".", "::"), spec.csIdentStyle.ty, "") _
+  val writeCppCliCppFile = writeCppFileGeneric(spec.cppCliOutFolder.get, spec.csNamespace.replace(".", "::"), spec.csIdentStyle.file, "") _
 
   def writeCppCliHppFile(name: String, origin: String, includes: Iterable[String], fwds: Iterable[String], f: IndentWriter => Unit, f2: IndentWriter => Unit = (w => {})) =
-    writeHppFileGeneric(spec.cppCliOutFolder.get, spec.csNamespace.replace(".", "::"), spec.csIdentStyle.ty)(name, origin, includes, fwds, f, f2)
+    writeHppFileGeneric(spec.cppCliOutFolder.get, spec.csNamespace.replace(".", "::"), spec.csIdentStyle.file)(name, origin, includes, fwds, f, f2)
 
   def generateConstants(w: IndentWriter, ident: Ident, r: Record, consts: Seq[Const]): Unit = {
     def writeCppCliLiteral(ty: TypeRef, v: Any) = {
@@ -291,15 +293,19 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     })
 
     val self = marshal.typename(ident, i)
+    val cppSelf = cppMarshal.fqTypename(ident, i)
+
+    refs.hpp.add("#include " + q(spec.cppFileIdentStyle(ident) + "." + spec.cppHeaderExt))
+    refs.hpp.add("#include <memory>")
 
     val methodNamesInScope = i.methods.map(m => idCs.method(m.ident))
 
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
       w.w(s"public ref class $self").bracedSemi {
         w.wlOutdent("public:")
-
+        val skipFirst = new SkipFirst
         i.methods.foreach(m => {
-          w.wl
+          skipFirst {w.wl}
           val static = if (m.static) "static " else ""
           val params = m.params.map(p => {
             marshal.paramType(p.ty, methodNamesInScope) + " " + idCs.local(p.ident)
@@ -309,10 +315,41 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           val methodName = if (self == origMethodName) "Do" + origMethodName else origMethodName
           w.wl(static + marshal.returnType(m.ret) + " " + methodName + params.mkString("(", ", ", ");"))
         })
+
+        w.wl
+        w.wlOutdent("internal:")
+        spec.cppNnType match {
+          case Some(nnPtr) =>
+            w.wl(s"using CppType = ${nnPtr}<$cppSelf>;")
+            w.wl(s"using CppOptType = std::shared_ptr<$cppSelf>;")
+          case _ =>
+            w.wl(s"using CppType = std::shared_ptr<$cppSelf>;")
+            w.wl(s"using CppOptType = std::shared_ptr<$cppSelf>;")
+        }
+        w.wl(s"using CsType = $self;");
+        w.wl
+        w.wl(s"static CppType ToCpp(CsType^ cs);")
+        w.wl(s"static CsType^ FromCppOpt(const CppOptType& cpp);")
+        w.wl(s"static CsType^ FromCpp(const CppType& cpp) { return FromCppOpt(cpp); }")
       }
     })
 
-    writeCppCliCppFile(ident, origin, refs.hpp, w => {
+    refs.cpp.add("#include \"Marshal.hpp\"")
+    refs.cpp.add("#include \"Error.hpp\"")
+    i.methods.foreach(m => {
+      m.params.foreach(p => {
+        def include(tm: MExpr): Unit = tm.base match {
+          case MMap =>
+            tm.args.foreach(a => include(a))
+          case d: MDef =>
+            refs.cpp.add("#include " + q(spec.cppFileIdentStyle(d.name) + "." + spec.cppHeaderExt))
+          case _ =>
+        }
+        include(p.ty.resolved)
+      })
+    })
+
+    writeCppCliCppFile(ident, origin, refs.cpp, w => {
       val skipFirst = new SkipFirst
       i.methods.foreach(m => {
         skipFirst {w.wl}
@@ -326,9 +363,33 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           // TODO Implementation!
           if (m.ret.isDefined) {
             w.wl(s"return ${dummyConstant(m.ret.get)};")
+          } else {
+            if (m.static) { // TODO Implementation!
+              w.w("try").bracedEnd(" DJINNI_TRANSLATE_EXCEPTIONS()") {
+                // TODO Check non-optional params for null
+                val ret = m.ret.fold("")(_ => "auto objcpp_result_ = ")
+                val call = ret + (if (!m.static) "_cppRefHandle.get()->" else cppSelf + "::") + idCpp.method(m.ident) + "("
+                writeAlignedCall(w, call, m.params, ")", p => marshal.toCpp(p.ty, idCs.local(p.ident.name)))
+
+                w.wl(";")
+                m.ret.fold()(r => w.wl(s"return ${marshal.fromCpp(r, "objcpp_result_")};"))
+              }
+            }
           }
         }
       })
+
+      // To/From C++
+      w.wl
+      w.wl(s"$self::CppType $self::ToCpp($self::CsType^ cs)").braced {
+        // TODO Implementation!
+        w.wl(s"return $self::CppType();")
+      }
+      w.wl
+      w.wl(s"$self::CsType^ $self::FromCppOpt(const $self::CppOptType& cpp)").braced {
+        // TODO Implementation!
+        w.wl(s"return gcnew $self::CsType();")
+      }
     })
   }
 
