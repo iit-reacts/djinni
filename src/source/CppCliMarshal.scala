@@ -55,6 +55,7 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
       } else {
         List()
       }
+    case e: MExtern => List(ImportRef(e.cs.header))
     case _ => List()
   }
 
@@ -147,7 +148,7 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
       case DEnum => withNs(Some("djinni"), s"Enum<${cppMarshal.fqTypename(tm)}, ${fqTypename(tm)}>")
       case _ => withNs(Some(spec.csNamespace.replace(".", "::")), helperClass(d.name))
     }
-    case e: MExtern => e.objcpp.translator
+    case e: MExtern => e.cs.translator
     case o => withNs(Some("djinni"), o match {
       case p: MPrimitive => p.idlName match {
         case "i8" => "I8"

@@ -28,7 +28,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     def find(m: Meta) = for(r <- marshal.references(m, name)) addRefs(r)
 
     private def addRefs(r: SymbolReference) = r match {
-      case ImportRef(arg) => hpp.add("#include " + arg)
+      case ImportRef(arg) => hpp.add("#include " + arg) // TODO add to `cpp`
       case DeclRef(decl, Some(spec.cppCliNamespace)) => hppFwds.add(decl)
       case DeclRef(_, _) =>
     }
@@ -147,6 +147,10 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     }
 
     val self = marshal.typename(ident, r)
+    val cppSelf = cppMarshal.fqTypename(ident, r)
+
+    refs.hpp.add("#include " + q(spec.cppFileIdentStyle(ident) + "." + spec.cppHeaderExt))
+    refs.hpp.add("#include <memory>")
 
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
       writeDoc(w, doc)
@@ -196,6 +200,14 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         }
 
         w.wl
+        w.wlOutdent("internal:")
+        w.wl(s"using CppType = $cppSelf;")
+        w.wl(s"using CsType = $self;");
+        w.wl
+        w.wl(s"static CppType ToCpp(CsType^ cs);")
+        w.wl(s"static CsType^ FromCpp(const CppType& cpp);")
+
+        w.wl
         w.wlOutdent("private:")
 
         // Field definitions.
@@ -206,7 +218,9 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       }
     })
 
-    writeCppCliCppFile(ident, origin, refs.hpp, w => {
+    refs.cpp.add("#include \"Marshal.hpp\"")
+
+    writeCppCliCppFile(ident, origin, refs.cpp, w => {
       // Constructor.
       if (r.fields.nonEmpty) {
         writeAlignedCall(w, self + "::" + self + "(", r.fields, ")", f => marshal.fieldType(f.ty) + " " + idCs.local(f.ident))
@@ -282,6 +296,21 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           w.wl(s"return ${compare(r.fields.last)};")
         }
       }
+
+      // To/From C++
+      val CppType = s"$self::CppType"
+      val CsType = s"$self::CsType"
+      w.wl
+      w.wl(s"$CppType $self::ToCpp($CsType^ cs)").braced {
+        w.wl("ASSERT(cs != nullptr);")
+        writeAlignedCall(w, "return {", r.fields, "}", f => marshal.toCpp(f.ty, "cs->" + idCs.property(f.ident)))
+        w.wl(";")
+      }
+      w.wl
+      w.wl(s"$CsType^ $self::FromCpp(const $CppType& cpp)").braced {
+        writeAlignedCall(w, s"return gcnew ${CsType}(", r.fields, ")", f => marshal.fromCpp(f.ty, "cpp." + idCpp.field(f.ident)))
+        w.wl(";")
+      }
     })
   }
 
@@ -301,19 +330,20 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     val methodNamesInScope = i.methods.map(m => idCs.method(m.ident))
 
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
-      w.w(s"public ref class $self").bracedSemi {
+      w.w(s"public ref class $self abstract").bracedSemi {
         w.wlOutdent("public:")
         val skipFirst = new SkipFirst
         i.methods.foreach(m => {
           skipFirst {w.wl}
-          val static = if (m.static) "static " else ""
+          val staticVirtual = if (m.static) "static " else "virtual "
           val params = m.params.map(p => {
             marshal.paramType(p.ty, methodNamesInScope) + " " + idCs.local(p.ident)
           })
+          val abstrct = if (!m.static) " abstract" else ""
           // Protect against conflicts with the class name.
           val origMethodName = idCs.method(m.ident)
           val methodName = if (self == origMethodName) "Do" + origMethodName else origMethodName
-          w.wl(static + marshal.returnType(m.ret) + " " + methodName + params.mkString("(", ", ", ");"))
+          w.wl(staticVirtual + marshal.returnType(m.ret) + " " + methodName + params.mkString("(", ", ", s")$abstrct;"))
         })
 
         w.wl
@@ -351,7 +381,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
 
     writeCppCliCppFile(ident, origin, refs.cpp, w => {
       val skipFirst = new SkipFirst
-      i.methods.foreach(m => {
+      i.methods.filter(m => m.static).foreach(m => {
         skipFirst {w.wl}
         val params = m.params.map(p => {
           marshal.paramType(p.ty, methodNamesInScope) + " " + idCs.local(p.ident)
@@ -360,35 +390,35 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         val origMethodName = idCs.method(m.ident)
         val methodName = if (self == origMethodName) "Do" + origMethodName else origMethodName
         w.w(marshal.returnType(m.ret) + s" $self::$methodName" + params.mkString("(", ", ", ")")).braced {
-          // TODO Implementation!
-          if (m.ret.isDefined) {
-            w.wl(s"return ${dummyConstant(m.ret.get)};")
-          } else {
-            if (m.static) { // TODO Implementation!
-              w.w("try").bracedEnd(" DJINNI_TRANSLATE_EXCEPTIONS()") {
-                // TODO Check non-optional params for null
-                val ret = m.ret.fold("")(_ => "auto objcpp_result_ = ")
-                val call = ret + (if (!m.static) "_cppRefHandle.get()->" else cppSelf + "::") + idCpp.method(m.ident) + "("
-                writeAlignedCall(w, call, m.params, ")", p => marshal.toCpp(p.ty, idCs.local(p.ident.name)))
+          w.w("try").bracedEnd(" DJINNI_TRANSLATE_EXCEPTIONS()") {
+            // TODO Check non-optional params for null
+            val ret = m.ret.fold("")(_ => "auto cs_result = ")
+            val call = ret + cppSelf + "::" + idCpp.method(m.ident) + "("
+            writeAlignedCall(w, call, m.params, ")", p => marshal.toCpp(p.ty, idCs.local(p.ident.name)))
 
-                w.wl(";")
-                m.ret.fold()(r => w.wl(s"return ${marshal.fromCpp(r, "objcpp_result_")};"))
-              }
-            }
+            w.wl(";")
+            m.ret.fold()(r => w.wl(s"return ${marshal.fromCpp(r, "cs_result")};"))
           }
+          m.ret.fold()(r => w.wl(s"return ${dummyConstant(r)}; // Not reached! (Silencing compiler warnings.)"))
         }
       })
 
       // To/From C++
+      val CppType = s"$self::CppType"
+      val CppOptType = s"$self::CppOptType"
+      val CsType = s"$self::CsType"
       w.wl
-      w.wl(s"$self::CppType $self::ToCpp($self::CsType^ cs)").braced {
-        // TODO Implementation!
-        w.wl(s"return $self::CppType();")
+      w.wl(s"$CppType $self::ToCpp($CsType^ cs)").braced {
+        w.wl("if (!cs)").braced {
+          w.wl("return nullptr;")
+        }
+        // TODO Check if its a C++ proxy!
+        w.wl(s"return $CppType();")
       }
       w.wl
-      w.wl(s"$self::CsType^ $self::FromCppOpt(const $self::CppOptType& cpp)").braced {
+      w.wl(s"$CsType^ $self::FromCppOpt(const $CppOptType& cpp)").braced {
         // TODO Implementation!
-        w.wl(s"return gcnew $self::CsType();")
+        w.wl(s"return nullptr;")
       }
     })
   }

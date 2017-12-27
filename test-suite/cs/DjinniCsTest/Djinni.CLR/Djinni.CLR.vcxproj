@@ -137,6 +137,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\handwritten-src\cpp\Duration-cs.hpp" />
     <ClInclude Include="Stdafx.h" />
     <ClInclude Include="..\..\..\djinni-output-temp\cppcli\*.hpp" />
     <ClInclude Include="..\..\..\..\support-lib\cppcli\*.hpp" />

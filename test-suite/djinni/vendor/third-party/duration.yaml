@@ -32,6 +32,8 @@ jni:
   typename: jobject
   typeSignature: 'Ljava/time/Duration;'
 cs:
+  translator: '::djinni::Duration'
+  header: '"Duration-cs.hpp"'
   typename: 'System::TimeSpan'
   reference: false
 ---
@@ -64,6 +66,8 @@ jni:
   typename: jobject
   typeSignature: 'Ljava/time/Duration;'
 cs:
+  translator: '::djinni::Duration_h'
+  header: '"Duration-cs.hpp"'
   typename: 'System::TimeSpan'
   reference: false
 ---
@@ -96,6 +100,8 @@ jni:
   typename: jobject
   typeSignature: 'Ljava/time/Duration;'
 cs:
+  translator: '::djinni::Duration_min'
+  header: '"Duration-cs.hpp"'
   typename: 'System::TimeSpan'
   reference: false
 ---
@@ -128,6 +134,8 @@ jni:
   typename: jobject
   typeSignature: 'Ljava/time/Duration;'
 cs:
+  translator: '::djinni::Duration_s'
+  header: '"Duration-cs.hpp"'
   typename: 'System::TimeSpan'
   reference: false
 ---
@@ -160,6 +168,8 @@ jni:
   typename: jobject
   typeSignature: 'Ljava/time/Duration;'
 cs:
+  translator: '::djinni::Duration_ms'
+  header: '"Duration-cs.hpp"'
   typename: 'System::TimeSpan'
   reference: false
 ---
@@ -192,6 +202,8 @@ jni:
   typename: jobject
   typeSignature: 'Ljava/time/Duration;'
 cs:
+  translator: '::djinni::Duration_us'
+  header: '"Duration-cs.hpp"'
   typename: 'System::TimeSpan'
   reference: false
 ---
@@ -224,5 +236,7 @@ jni:
   typename: jobject
   typeSignature: 'Ljava/time/Duration;'
 cs:
+  translator: '::djinni::Duration_ns'
+  header: '"Duration-cs.hpp"'
   typename: 'System::TimeSpan'
   reference: false

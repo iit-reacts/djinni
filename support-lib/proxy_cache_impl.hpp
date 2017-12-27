@@ -18,8 +18,56 @@
 
 #include "proxy_cache_interface.hpp"
 #include <functional>
-#include <mutex>
 #include <unordered_map>
+
+#ifdef __cplusplus_cli
+#include <Windows.h>
+
+class Mutex {
+    CRITICAL_SECTION _lock;
+public:
+    Mutex(const Mutex&) = delete;
+    Mutex(Mutex&&) = delete;
+    Mutex& operator=(const Mutex&) = delete;
+    Mutex& operator=(Mutex&&) = delete;
+
+    Mutex() throw() {
+        InitializeCriticalSection(&_lock);
+    }
+    ~Mutex() throw() {
+        DeleteCriticalSection(&_lock);
+    }
+    void lock() throw() {
+        EnterCriticalSection(&_lock);
+    }
+    void unlock() throw() {
+        LeaveCriticalSection(&_lock);
+    }
+};
+
+template<class T>
+class UniqueLock {
+public:
+    UniqueLock(T& mutex) throw() : _mutex(&mutex) {
+        _mutex->lock();
+    }
+    ~UniqueLock() throw() {
+        _mutex->unlock();
+    }
+private:
+    T* _mutex;
+};
+
+using MutexType = Mutex;
+
+template <class T>
+using LockType = UniqueLock<T>;
+
+#else
+#include <mutex>
+using MutexType = std::mutex;
+using LockType = std::unique_lock
+#endif
 
 // """
 //    This place is not a place of honor.
@@ -79,7 +127,7 @@ public:
     OwningProxyPointer get(const std::type_index & tag,
                            const OwningImplPointer & impl,
                            AllocatorFunction * alloc) {
-        std::unique_lock<std::mutex> lock(m_mutex);
+        UniqueLock<MutexType> lock(m_mutex);
         UnowningImplPointer ptr = get_unowning(impl);
         auto existing_proxy_iter = m_mapping.find({tag, ptr});
         if (existing_proxy_iter != m_mapping.end()) {
@@ -101,7 +149,7 @@ public:
      * Erase an object from the proxy cache.
      */
     void remove(const std::type_index & tag, const UnowningImplPointer & impl_unowning) {
-        std::unique_lock<std::mutex> lock(m_mutex);
+        UniqueLock<MutexType> lock(m_mutex);
         auto it = m_mapping.find({tag, impl_unowning});
         if (it != m_mapping.end()) {
             // The entry in the map should already be expired: this is called from Handle's
@@ -134,7 +182,7 @@ private:
     };
 
     std::unordered_map<Key, WeakProxyPointer, KeyHash, KeyEqual> m_mapping;
-    std::mutex m_mutex;
+    MutexType m_mutex;
 
     // Only ProxyCache<Traits>::get_base() can allocate these objects.
     Pimpl() = default;
