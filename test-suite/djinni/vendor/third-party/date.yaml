@@ -31,5 +31,7 @@ jni:
   typename: jobject
   typeSignature: 'Ljava/util/Date;'
 cs:
+  translator: '::djinni::Date'
+  header: '"Marshal.hpp"'
   typename: 'System::DateTime'
   reference: false

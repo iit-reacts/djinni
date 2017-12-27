@@ -17,6 +17,23 @@
 
 namespace djinni {
 
+template<class CppTypeArg, class CsTypeArg>
+struct Primitive {
+    using CppType = CppTypeArg;
+    using CsType = CsTypeArg;
+
+    static CppType ToCpp(CsType x) noexcept { return x; }
+    static CsType FromCpp(CppType x) noexcept { return x; }
+};
+
+using Bool = Primitive<bool, bool>;
+using I8 = Primitive<int8_t, char>;
+using I16 = Primitive<int16_t, short>;
+using I32 = Primitive<int32_t, int>;
+using I64 = Primitive<int64_t, __int64>;
+using F32 = Primitive<float, float>;
+using F64 = Primitive<double, double>;
+
 template<class CppEnum, class CsEnum>
 struct Enum {
   using CppType = CppEnum;
@@ -45,16 +62,72 @@ struct String {
   }
 };
 
-template<class Key, class Value>
-class Map {
-  using CppKeyType = typename Key::CppType;
-  using CppValueType = typename Value::CppType;
-  using CsKeyType = typename Key::CsType;
-  using CsValueType = typename Value::CsType;
+struct Binary {
+    using CppType = std::vector<uint8_t>;
+    using CsType = array<System::Byte>;
 
-public:
-  using CppType = std::unordered_map<CppKeyType, CppValueType>;
-  using CsType = System::Collections::Generic::Dictionary<CsKeyType, CsValueType>;
+    using Boxed = Binary;
+
+    static CppType ToCpp(CsType^ data) {
+        ASSERT(data != nullptr);
+        CppType ret;
+        ret.reserve(data->Length);
+        System::Runtime::InteropServices::Marshal::Copy(data, 0, System::IntPtr(&ret[0]), data->Length);
+        return ret;
+    }
+
+    static CsType^ FromCpp(const CppType& bytes) {
+        auto len = bytes.size();
+        CsType^ ret = gcnew CsType(len);
+        System::Runtime::InteropServices::Marshal::Copy(System::IntPtr(const_cast<CppType::value_type*>(&bytes[0])), ret, 0, len);
+        return ret;
+    }
+};
+
+template<template<class> class OptionalType, class T>
+struct Optional {
+    // SFINAE helper: if C::CppOptType exists, opt_type<T>(nullptr) will return
+    // that type. If not, it returns OptionalType<C::CppType>. This is necessary
+    // because we special-case optional interfaces to be represented as a nullable
+    // std::shared_ptr<T>, not optional<shared_ptr<T>> or optional<nn<shared_ptr<T>>>.
+    template <typename C> static OptionalType<typename C::CppType> opt_type(void*);
+    template <typename C> static typename C::CppOptType opt_type(typename C::CppOptType*);
+
+    using CppType = decltype(opt_type<T>(nullptr));
+    using CsType = typename T::CsType;
+
+    static CppType ToCpp(System::Nullable<CsType> obj) {
+        if (obj.HasValue) {
+            return T::ToCpp(obj.Value);
+        } else {
+            return CppType();
+        }
+    }
+
+    static CppType ToCpp(CsType^ obj) {
+        if (obj != nullptr) {
+            return T::ToCpp(obj.Value);
+        } else {
+            return CppType();
+        }
+    }
+
+    // FromCpp used for normal optionals
+    static System::Nullable<CsType> FromCpp(const OptionalType<typename T::CppType>& opt) {
+        return opt ? T::FromCpp(*opt) : System::Nullable<CsType>();
+    }
+
+    // FromCpp used for nullable objects
+    template <typename C = T>
+    static System::Nullable<CsType> FromCpp(const typename C::CppOptType& cppOpt) {
+        return T::FromCppOpt(cppOpt);
+    }
+};
+
+template<class Key, class Value>
+struct Map {
+  using CppType = std::unordered_map<typename Key::CppType, typename Value::CppType>;
+  using CsType = System::Collections::Generic::Dictionary<typename Key::CsType, typename Value::CsType>;
 
   static CppType ToCpp(CsType^ map) {
     ASSERT(map != nullptr);

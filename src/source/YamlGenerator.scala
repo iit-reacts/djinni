@@ -217,6 +217,8 @@ object YamlGenerator {
       nested(td, "jni")("typename").toString,
       nested(td, "jni")("typeSignature").toString),
     MExtern.Cs(
+      nested(td, "cs")("translator").toString,
+      nested(td, "cs")("header").toString,
       nested(td, "cs")("typename").toString,
       nested(td, "cs")("reference").asInstanceOf[Boolean])
   )

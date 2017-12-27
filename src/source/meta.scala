@@ -68,6 +68,8 @@ object MExtern {
     typeSignature: String // The mangled Java type signature (e.g. "Ljava/lang/String;")
   )
   case class Cs(
+    translator: String, // C++ typename containing ToCpp/TromCpp methods
+    header: String, // Where to find the translator class
     typename: String,
     reference: Boolean
   )
@@ -93,7 +95,7 @@ val defaults: Map[String,MOpaque] = immutable.HashMap(
   ("i8",   MPrimitive("i8",   "byte",    "jbyte",    "int8_t",  "Byte",    "B", "int8_t",  "NSNumber", "sbyte",  "char")),
   ("i16",  MPrimitive("i16",  "short",   "jshort",   "int16_t", "Short",   "S", "int16_t", "NSNumber", "short",  "short")),
   ("i32",  MPrimitive("i32",  "int",     "jint",     "int32_t", "Integer", "I", "int32_t", "NSNumber", "int",    "int")),
-  ("i64",  MPrimitive("i64",  "long",    "jlong",    "int64_t", "Long",    "J", "int64_t", "NSNumber", "long",   "long")),
+  ("i64",  MPrimitive("i64",  "long",    "jlong",    "int64_t", "Long",    "J", "int64_t", "NSNumber", "long",   "__int64")),
   ("f32",  MPrimitive("f32",  "float",   "jfloat",   "float",   "Float",   "F", "float",   "NSNumber", "float",  "float")),
   ("f64",  MPrimitive("f64",  "double",  "jdouble",  "double",  "Double",  "D", "double",  "NSNumber", "double", "double")),
   ("bool", MPrimitive("bool", "boolean", "jboolean", "bool",    "Boolean", "Z", "BOOL",    "NSNumber", "bool",   "bool")),

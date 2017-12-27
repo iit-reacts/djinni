@@ -52,10 +52,10 @@ bash.exe $djinni_dir\build
 
 # TODO check if it was already generated...
 
-if (Test-Path $temp_out) {
-    # Directory exists.
-    Remove-Item -Recurse -Force $temp_out
-}
+#if (Test-Path $temp_out) {
+#    # Directory exists.
+#    Remove-Item -Recurse -Force $temp_out
+#}
 
 cd $base_dir
 

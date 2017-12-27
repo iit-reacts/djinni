@@ -8,7 +8,7 @@ namespace Djinni.Testing.Unit
     public class EnumTest
     {
         [Test]
-        public void Djinni_Enum()
+        public void TestEnumKey()
         {
             var m = new Dictionary<Color, string>
             {
