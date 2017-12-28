@@ -1,5 +1,8 @@
 package djinni
 
+import java.io.StringWriter
+import javax.xml.stream.events.Namespace
+
 import djinni.ast.Record.DerivingType
 import djinni.ast.Record.DerivingType.DerivingType
 import djinni.ast._
@@ -33,6 +36,8 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       case DeclRef(_, _) =>
     }
   }
+
+  def withCppCliNs(namespace: String, t: String) = withNs(Some(namespace.replace(".", "::")), t)
 
   val writeCppCliCppFile = writeCppFileGeneric(spec.cppCliOutFolder.get, spec.csNamespace.replace(".", "::"), spec.csIdentStyle.file, "") _
 
@@ -356,16 +361,17 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
             w.wl(s"using CppType = std::shared_ptr<$cppSelf>;")
             w.wl(s"using CppOptType = std::shared_ptr<$cppSelf>;")
         }
-        w.wl(s"using CsType = $self;");
+        w.wl(s"using CsType = $self^;");
         w.wl
-        w.wl(s"static CppType ToCpp(CsType^ cs);")
-        w.wl(s"static CsType^ FromCppOpt(const CppOptType& cpp);")
-        w.wl(s"static CsType^ FromCpp(const CppType& cpp) { return FromCppOpt(cpp); }")
+        w.wl(s"static CppType ToCpp(CsType cs);")
+        w.wl(s"static CsType FromCppOpt(const CppOptType& cpp);")
+        w.wl(s"static CsType FromCpp(const CppType& cpp) { return FromCppOpt(cpp); }")
       }
     })
 
     refs.cpp.add("#include \"Marshal.hpp\"")
     refs.cpp.add("#include \"Error.hpp\"")
+    refs.cpp.add("#include \"CsWrapperCache.hpp\"")
     i.methods.foreach(m => {
       m.params.foreach(p => {
         def include(tm: MExpr): Unit = tm.base match {
@@ -403,22 +409,73 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         }
       })
 
+      val csProxySelf = self + "CsProxy"
+
+      if (i.ext.cs) {
+        w.wl
+        w.w(s"class $csProxySelf : public $cppSelf").bracedSemi {
+          w.wl(s"using CsType = ${withCppCliNs(spec.csNamespace, self)}^;")
+          w.wl("using HandleType = ::djinni::CsProxyCache::Handle<::djinni::CsRef<CsType>>;")
+          w.wlOutdent("public:")
+          for (m <- i.methods) {
+            val ret = cppMarshal.fqReturnType(m.ret)
+            val params = m.params.map(p => cppMarshal.fqParamType(p.ty) + " " + idCpp.local(p.ident))
+            w.wl(s"$ret ${idCpp.method(m.ident)}${params.mkString("(", ", ", ")")} override").braced {
+              val ret = m.ret.fold("")(_ => "auto cs_result = ")
+              val call = s"djinni_private_get_proxied_cs_object()->${idCs.method(m.ident)}("
+              writeAlignedCall(w, ret + call, m.params, ")", p => s"(${marshal.fromCpp(p.ty, idCpp.local(p.ident))})")
+              w.wl(";")
+              m.ret.fold()(ty => {
+                w.wl("// TODO check cs_result for null")
+                w.wl(s"return ${marshal.toCpp(ty, "cs_result")};")
+              })
+            }
+          }
+          w.wl
+          w.w("CsType djinni_private_get_proxied_cs_object()").braced {
+            w.wl("return m_djinni_private_proxy_handle.get().get();")
+          }
+          w.wl
+          w.wlOutdent("private:")
+          w.wl("HandleType m_djinni_private_proxy_handle;")
+        }
+      }
+
       // To/From C++
       val CppType = s"$self::CppType"
       val CppOptType = s"$self::CppOptType"
       val CsType = s"$self::CsType"
       w.wl
-      w.wl(s"$CppType $self::ToCpp($CsType^ cs)").braced {
-        w.wl("if (!cs)").braced {
+      w.wl(s"$CppType $self::ToCpp($CsType cs)").braced {
+        w.w("if (!cs)").braced {
           w.wl("return nullptr;")
         }
         // TODO Check if its a C++ proxy!
         w.wl(s"return $CppType();")
       }
       w.wl
-      w.wl(s"$CsType^ $self::FromCppOpt(const $CppOptType& cpp)").braced {
-        // TODO Implementation!
-        w.wl(s"return nullptr;")
+      w.wl(s"$CsType $self::FromCppOpt(const $CppOptType& cpp)").braced {
+        w.w("if (!cpp)").braced {
+          w.wl("return nullptr;")
+        }
+        if (i.ext.cs && !i.ext.cpp) {
+          // C# only. In this case we *must* unwrap a proxy object - the dynamic_cast will
+          // throw bad_cast if we gave it something of the wrong type.
+          w.wl(s"return dynamic_cast<$csProxySelf*>(cpp.get())->djinni_private_get_proxied_cs_object();")
+        } else if (i.ext.cs || i.ext.cpp) {
+          // C++ only, or C++ and C#.
+          if (i.ext.cs) {
+            // If it could be implemented in C#, we might have to unwrap a proxy object.
+            w.w(s"if (auto cpp_ptr = dynamic_cast<$csProxySelf*>(cpp.get()))").braced {
+              w.wl("return cpp_ptr->djinni_private_get_proxied_cs_object();")
+            }
+          }
+          // TODO
+          w.wl(s"return nullptr; //::djinni::get_cpp_proxy<$csProxySelf>(cpp);")
+        } else {
+          // Neither C# nor C++.  Unusable, but generate compilable code.
+          w.wl("DJINNI_UNIMPLEMENTED(\"Interface not implementable in any language.\");")
+        }
       }
     })
   }

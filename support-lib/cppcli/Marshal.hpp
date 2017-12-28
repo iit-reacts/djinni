@@ -124,10 +124,10 @@ struct Optional {
     // that type. If not, it returns OptionalType<C::CppType>. This is necessary
     // because we special-case optional interfaces to be represented as a nullable
     // std::shared_ptr<T>, not optional<shared_ptr<T>> or optional<nn<shared_ptr<T>>>.
-    template <typename C> static OptionalType<typename C::CppType> opt_type(void*);
+    template <typename C> static OptionalType<typename C::CppType> opt_type(...);
     template <typename C> static typename C::CppOptType opt_type(typename C::CppOptType*);
 
-    using CppType = decltype(opt_type<T>(nullptr));
+    using CppType = decltype(opt_type<T>(0));
     using CsType = typename T::CsType;
 
     using CsOptionalType = typename ::djinni::CsOptional<typename T::CsType>::type;
