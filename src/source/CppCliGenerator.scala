@@ -415,15 +415,19 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         w.wl
         w.w(s"class $csProxySelf : public $cppSelf").bracedSemi {
           w.wl(s"using CsType = ${withCppCliNs(spec.csNamespace, self)}^;")
+          w.wl(s"using CsRefType = ::djinni::CsRef<CsType>;")
           w.wl("using HandleType = ::djinni::CsProxyCache::Handle<::djinni::CsRef<CsType>>;")
           w.wlOutdent("public:")
+          w.wl(s"$csProxySelf(CsRefType cs) : m_djinni_private_proxy_handle(std::move(cs)) {}")
+          w.wl(s"$csProxySelf(const ::djinni::CsOwningImplPointer& ptr) : $csProxySelf(CsRefType(dynamic_cast<CsType>(ptr.get()))) {}")
           for (m <- i.methods) {
+            w.wl
             val ret = cppMarshal.fqReturnType(m.ret)
             val params = m.params.map(p => cppMarshal.fqParamType(p.ty) + " " + idCpp.local(p.ident))
             w.wl(s"$ret ${idCpp.method(m.ident)}${params.mkString("(", ", ", ")")} override").braced {
               val ret = m.ret.fold("")(_ => "auto cs_result = ")
               val call = s"djinni_private_get_proxied_cs_object()->${idCs.method(m.ident)}("
-              writeAlignedCall(w, ret + call, m.params, ")", p => s"(${marshal.fromCpp(p.ty, idCpp.local(p.ident))})")
+              writeAlignedCall(w, ret + call, m.params, ")", p => s"${marshal.fromCpp(p.ty, idCpp.local(p.ident))}")
               w.wl(";")
               m.ret.fold()(ty => {
                 w.wl("// TODO check cs_result for null")
@@ -450,8 +454,22 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         w.w("if (!cs)").braced {
           w.wl("return nullptr;")
         }
-        // TODO Check if its a C++ proxy!
-        w.wl(s"return $CppType();")
+        if (i.ext.cpp && !i.ext.cs) {
+          // C++ only. In this case we generate a class instead of a protocol, so
+          // we don't have to do any casting at all, just access cppRef directly.
+          // TODO
+          w.wl("DJINNI_UNIMPLEMENTED(\"Waiting for C++-only impl.\");")
+        } else if (i.ext.cpp || i.ext.cs) {
+          // C# only, or C# and C++.
+          if (i.ext.cpp) {
+            // If it could be implemented in C++, we might have to unwrap a proxy object.
+            // TODO
+          }
+          w.wl(s"return ::djinni::get_cs_proxy<$csProxySelf>(cs);")
+        } else {
+          // Neither C# nor C++.  Unusable, but generate compilable code.
+          w.wl("DJINNI_UNIMPLEMENTED(\"Interface not implementable in any language.\");")
+        }
       }
       w.wl
       w.wl(s"$CsType $self::FromCppOpt(const $CppOptType& cpp)").braced {
