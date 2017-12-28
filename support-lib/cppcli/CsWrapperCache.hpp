@@ -6,33 +6,26 @@
 
 namespace djinni {
 
-// TODO Try to replace with CsRef<System::Object^>
-struct CsOwningImplPointer {
-    CsOwningImplPointer(System::Object^ obj) {}
-    System::Object^ get() const {
-        return _obj;
+template<class CsRefType>
+class CsRef {
+public:
+    CsRef(CsRefType ref) : _ref(ref) {}
+    operator bool() {
+        return false;
     }
+    CsRefType get() const {
+        return _ref;
+    }
+
 private:
-    gcroot<System::Object^> _obj;
+    gcroot<CsRefType> _ref;
 };
+
+using CsOwningImplPointer = CsRef<System::Object^>;
 
 struct CsUnowningImplPointer {
 public:
     CsUnowningImplPointer(const CsOwningImplPointer& ptr) {}
-};
-
-template<class T>
-class CsRef {
-public:
-    CsRef(T^ ref) : _ref(ref) {}
-    CsRef(CsOwningImplPointer ptr) {
-        // TODO
-    }
-    operator bool() { return false; }
-    CsOwningImplPointer get() const { return CsOwningImplPointer(_ref); }
-
-private:
-    gcroot<T^> _ref;
 };
 
 struct CsIdentityHash;
@@ -52,7 +45,7 @@ extern template class ProxyCache<CsProxyCacheTraits>;
 using CsProxyCache = ProxyCache<CsProxyCacheTraits>;
 
 template <typename CppType, typename CsType>
-static std::shared_ptr<CppType> get_cs_proxy(CsType^ cs) {
+static std::shared_ptr<CppType> get_cs_proxy(CsType cs) {
   return std::static_pointer_cast<CppType>(CsProxyCache::get(
     typeid(CppType),
     cs,
