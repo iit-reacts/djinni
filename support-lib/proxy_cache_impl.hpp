@@ -197,6 +197,12 @@ void ProxyCache<Traits>::cleanup(const std::shared_ptr<Pimpl> & base,
 }
 
 /*
+ * C++/CLI (Windows) workaround to avoid the "this function must be called in the default
+ * domain" error.
+ */
+// TODO This is causing the program to hang on exit.
+#pragma managed(push, off)
+/*
  * Magic-static singleton.
  *
  * It's possible for someone to hold Djinni-static objects in a global (like a shared_ptr
@@ -212,6 +218,7 @@ auto ProxyCache<Traits>::get_base() -> const std::shared_ptr<Pimpl> & {
     // Returning by reference lets us avoid touching the refcount unless needed.
     return instance;
 }
+#pragma managed(pop)
 
 template <typename Traits>
 auto ProxyCache<Traits>::get(const std::type_index & tag,
