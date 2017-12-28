@@ -62,13 +62,31 @@ struct String {
   }
 };
 
+struct Date {
+  using CppType = std::chrono::system_clock::time_point;
+  using CsType = System::DateTime;
+
+  using Ticks = std::chrono::duration<int64_t, std::ratio<1, 10000000>>;
+  static const auto TicksBeforeEpoch = 22089888000000000;
+
+  static CppType ToCpp(CsType date) {
+    auto ticks = Ticks(date.Ticks - TicksBeforeEpoch);
+    return std::chrono::system_clock::time_point(ticks);
+  }
+
+  static CsType FromCpp(const CppType& date) {
+    auto ticks = std::chrono::duration_cast<Ticks>(date.time_since_epoch()).count();
+    return CsType(ticks + TicksBeforeEpoch);
+  }
+};
+
 struct Binary {
     using CppType = std::vector<uint8_t>;
-    using CsType = array<System::Byte>;
+    using CsType = array<System::Byte>^;
 
     using Boxed = Binary;
 
-    static CppType ToCpp(CsType^ data) {
+    static CppType ToCpp(CsType data) {
         ASSERT(data != nullptr);
         CppType ret;
         ret.reserve(data->Length);
@@ -76,12 +94,28 @@ struct Binary {
         return ret;
     }
 
-    static CsType^ FromCpp(const CppType& bytes) {
+    static CsType FromCpp(const CppType& bytes) {
         auto len = bytes.size();
-        CsType^ ret = gcnew CsType(len);
+        auto ret = gcnew array<System::Byte>(len);
         System::Runtime::InteropServices::Marshal::Copy(System::IntPtr(const_cast<CppType::value_type*>(&bytes[0])), ret, 0, len);
         return ret;
     }
+};
+
+template<class T>
+struct IsRef : std::false_type {};
+
+template<class T>
+struct IsRef<T^> : std::true_type {};
+
+template<class T>
+struct CsOptional {
+    typedef System::Nullable<T> type;
+};
+
+template<class T>
+struct CsOptional<T^> {
+    typedef T^ type;
 };
 
 template<template<class> class OptionalType, class T>
@@ -96,40 +130,86 @@ struct Optional {
     using CppType = decltype(opt_type<T>(nullptr));
     using CsType = typename T::CsType;
 
-    static CppType ToCpp(System::Nullable<CsType> obj) {
-        if (obj.HasValue) {
-            return T::ToCpp(obj.Value);
-        } else {
-            return CppType();
-        }
+    using CsOptionalType = typename ::djinni::CsOptional<typename T::CsType>::type;
+
+    // Enabled for reference types (^).
+    template <class O, typename std::enable_if<IsRef<O>::value, int>::type = 0>
+    static CppType ToCpp(O obj) {
+      return CppType();
     }
 
-    static CppType ToCpp(CsType^ obj) {
-        if (obj != nullptr) {
-            return T::ToCpp(obj.Value);
-        } else {
-            return CppType();
-        }
+    // Enabled for value types that require System::Nullable<>.
+    template <class O, typename std::enable_if<!IsRef<O>::value, int>::type = 0>
+    static CppType ToCpp(O obj) {
+      return CppType();
     }
 
     // FromCpp used for normal optionals
-    static System::Nullable<CsType> FromCpp(const OptionalType<typename T::CppType>& opt) {
-        return opt ? T::FromCpp(*opt) : System::Nullable<CsType>();
+    static CsOptionalType FromCpp(const OptionalType<typename T::CppType>& opt) {
+        return opt ? T::FromCpp(*opt) : CsOptionalType();
     }
 
     // FromCpp used for nullable objects
     template <typename C = T>
-    static System::Nullable<CsType> FromCpp(const typename C::CppOptType& cppOpt) {
+    static CsType FromCpp(const typename C::CppOptType& cppOpt) {
         return T::FromCppOpt(cppOpt);
     }
+};
+
+template<class T>
+struct List {
+  using CppType = std::vector<typename T::CppType>;
+  using CsType = System::Collections::Generic::List<typename T::CsType>^;
+
+  static CppType ToCpp(CsType l) {
+    ASSERT(l != nullptr);
+    CppType v;
+    v.reserve(l->Count);
+    for each (auto value in l) {
+      v.emplace_back(T::ToCpp(value));
+    }
+    return v;
+  }
+
+  static CsType FromCpp(const CppType& v) {
+    auto l = gcnew System::Collections::Generic::List<typename T::CsType>();
+    for (const auto& value : v) {
+      l->Add(T::FromCpp(value));
+    }
+    return l;
+  }
+};
+
+template<class T>
+class Set {
+public:
+  using CppType = std::unordered_set<typename T::CppType>;
+  using CsType = System::Collections::Generic::HashSet<typename T::CsType>^;
+
+  static CppType ToCpp(CsType set) {
+    ASSERT(set != nullptr);
+    CppType s;
+    for each (auto value in set) {
+      s.insert(T::ToCpp(value));
+    }
+    return s;
+  }
+
+  static CsType FromCpp(const CppType& s) {
+    auto set = gcnew System::Collections::Generic::HashSet<typename T::CsType>();
+    for (const auto& value : s) {
+      set->Add(T::FromCpp(value));
+    }
+    return set;
+  }
 };
 
 template<class Key, class Value>
 struct Map {
   using CppType = std::unordered_map<typename Key::CppType, typename Value::CppType>;
-  using CsType = System::Collections::Generic::Dictionary<typename Key::CsType, typename Value::CsType>;
+  using CsType = System::Collections::Generic::Dictionary<typename Key::CsType, typename Value::CsType>^;
 
-  static CppType ToCpp(CsType^ map) {
+  static CppType ToCpp(CsType map) {
     ASSERT(map != nullptr);
     CppType m;
     m.reserve(map->Count);
@@ -139,8 +219,8 @@ struct Map {
     return m;
   }
 
-  static CsType^ FromCpp(const CppType& m) {
-    auto map = gcnew CsType(m.size());
+  static CsType FromCpp(const CppType& m) {
+    auto map = gcnew System::Collections::Generic::Dictionary<typename Key::CsType, typename Value::CsType>(m.size());
     for (const auto& kvp : m) {
       map->Add(Key::FromCpp(kvp.first), Value::FromCpp(kvp.second));
     }
