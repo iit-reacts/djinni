@@ -88,10 +88,12 @@ struct Binary {
 
     static CppType ToCpp(CsType data) {
         ASSERT(data != nullptr);
-        CppType ret;
-        ret.reserve(data->Length);
-        System::Runtime::InteropServices::Marshal::Copy(data, 0, System::IntPtr(&ret[0]), data->Length);
-        return ret;
+        CppType v;
+        v.reserve(data->Length);
+        for each (auto value in data) {
+            v.emplace_back(value);
+        }
+        return v;
     }
 
     static CsType FromCpp(const CppType& bytes) {
