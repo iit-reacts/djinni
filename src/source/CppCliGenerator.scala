@@ -218,7 +218,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         // Field definitions.
         for (f <- r.fields) {
           writeDoc(w, f.doc)
-          w.wl(marshal.fieldType(f.ty) + " _" + idCs.field(f.ident) + ";")
+          w.wl(s"${marshal.fieldType(f.ty)} ${idCs.field(f.ident)};")
         }
       }
     })
@@ -230,7 +230,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       if (r.fields.nonEmpty) {
         writeAlignedCall(w, self + "::" + self + "(", r.fields, ")", f => marshal.fieldType(f.ty) + " " + idCs.local(f.ident))
         w.wl
-        val init = (f: Field) => "_" + idCs.field(f.ident) + "(" + idCs.local(f.ident) + ")"
+        val init = (f: Field) => idCs.field(f.ident) + "(" + idCs.local(f.ident) + ")"
         w.wl(": " + init(r.fields.head))
         r.fields.tail.map(f => ", " + init(f)).foreach(w.wl)
         w.wl("{}")
@@ -241,7 +241,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         w.wl
         val retType = s"${marshal.fieldType(f.ty)}"
         w.wl(s"${retType} $self::${idCs.property(f.ident)}::get()").braced {
-          w.wl(s"return ${dummyConstant(f.ty)};")
+          w.wl(s"return ${idCs.field(f.ident)};")
         }
       }
 
