@@ -18,8 +18,12 @@ struct Primitive {
     using CppType = CppTypeArg;
     using CsType = CsTypeArg;
 
-    static CppType ToCpp(CsType x) noexcept { return x; }
-    static CsType FromCpp(CppType x) noexcept { return x; }
+    static CppType ToCpp(CsType x) noexcept {
+        return x;
+    }
+    static CsType FromCpp(CppType x) noexcept {
+        return x;
+    }
 };
 
 using Bool = Primitive<bool, bool>;
@@ -32,48 +36,48 @@ using F64 = Primitive<double, double>;
 
 template<class CppEnum, class CsEnum>
 struct Enum {
-  using CppType = CppEnum;
-  using CsType = CsEnum;
+    using CppType = CppEnum;
+    using CsType = CsEnum;
 
-  static CppType ToCpp(CsType e) noexcept {
-    return static_cast<CppType>(e);
-  }
+    static CppType ToCpp(CsType e) noexcept {
+        return static_cast<CppType>(e);
+    }
 
-  static CsType FromCpp(CppType e) noexcept {
-    return static_cast<CsType>(e);
-  }
+    static CsType FromCpp(CppType e) noexcept {
+        return static_cast<CsType>(e);
+    }
 };
 
 struct String {
-  using CppType = std::string;
-  using CsType = System::String^;
+    using CppType = std::string;
+    using CsType = System::String^;
 
-  static CppType ToCpp(CsType string) {
-    ASSERT(string != nullptr);
-    return msclr::interop::marshal_as<CppType>(string);
-  }
+    static CppType ToCpp(CsType string) {
+        ASSERT(string != nullptr);
+        return msclr::interop::marshal_as<CppType>(string);
+    }
 
-  static CsType FromCpp(const CppType& string) {
-    return msclr::interop::marshal_as<CsType>(string);
-  }
+    static CsType FromCpp(const CppType& string) {
+        return msclr::interop::marshal_as<CsType>(string);
+    }
 };
 
 struct Date {
-  using CppType = std::chrono::system_clock::time_point;
-  using CsType = System::DateTime;
+    using CppType = std::chrono::system_clock::time_point;
+    using CsType = System::DateTime;
 
-  using Ticks = std::chrono::duration<int64_t, std::ratio<1, 10000000>>;
-  static const auto TicksBeforeEpoch = 22089888000000000;
+    using Ticks = std::chrono::duration<int64_t, std::ratio<1, 10000000>>;
+    static const auto TicksBeforeEpoch = 22089888000000000;
 
-  static CppType ToCpp(CsType date) {
-    auto ticks = Ticks(date.Ticks - TicksBeforeEpoch);
-    return std::chrono::system_clock::time_point(ticks);
-  }
+    static CppType ToCpp(CsType date) {
+        auto ticks = Ticks(date.Ticks - TicksBeforeEpoch);
+        return std::chrono::system_clock::time_point(ticks);
+    }
 
-  static CsType FromCpp(const CppType& date) {
-    auto ticks = std::chrono::duration_cast<Ticks>(date.time_since_epoch()).count();
-    return CsType(ticks + TicksBeforeEpoch);
-  }
+    static CsType FromCpp(const CppType& date) {
+        auto ticks = std::chrono::duration_cast<Ticks>(date.time_since_epoch()).count();
+        return CsType(ticks + TicksBeforeEpoch);
+    }
 };
 
 struct Binary {
@@ -131,13 +135,17 @@ struct Optional {
     // Enabled for reference types (^).
     template <class O, typename std::enable_if<IsRef<O>::value, int>::type = 0>
     static CppType ToCpp(O obj) {
-      return CppType();
+        if (obj != nullptr) {
+            return T::ToCpp(obj);
+        } else {
+            return CppType();
+        }
     }
 
     // Enabled for value types that require System::Nullable<>.
     template <class O, typename std::enable_if<!IsRef<O>::value, int>::type = 0>
     static CppType ToCpp(O obj) {
-      return CppType();
+        return CppType();
     }
 
     // FromCpp used for normal optionals
@@ -154,74 +162,74 @@ struct Optional {
 
 template<class T>
 struct List {
-  using CppType = std::vector<typename T::CppType>;
-  using CsType = System::Collections::Generic::List<typename T::CsType>^;
+    using CppType = std::vector<typename T::CppType>;
+    using CsType = System::Collections::Generic::List<typename T::CsType>^;
 
-  static CppType ToCpp(CsType l) {
-    ASSERT(l != nullptr);
-    CppType v;
-    v.reserve(l->Count);
-    for each (auto value in l) {
-      v.emplace_back(T::ToCpp(value));
+    static CppType ToCpp(CsType l) {
+        ASSERT(l != nullptr);
+        CppType v;
+        v.reserve(l->Count);
+        for each (auto value in l) {
+            v.emplace_back(T::ToCpp(value));
+        }
+        return v;
     }
-    return v;
-  }
 
-  static CsType FromCpp(const CppType& v) {
-    auto l = gcnew System::Collections::Generic::List<typename T::CsType>();
-    for (const auto& value : v) {
-      l->Add(T::FromCpp(value));
+    static CsType FromCpp(const CppType& v) {
+        auto l = gcnew System::Collections::Generic::List<typename T::CsType>();
+        for (const auto& value : v) {
+            l->Add(T::FromCpp(value));
+        }
+        return l;
     }
-    return l;
-  }
 };
 
 template<class T>
 class Set {
 public:
-  using CppType = std::unordered_set<typename T::CppType>;
-  using CsType = System::Collections::Generic::HashSet<typename T::CsType>^;
+    using CppType = std::unordered_set<typename T::CppType>;
+    using CsType = System::Collections::Generic::HashSet<typename T::CsType>^;
 
-  static CppType ToCpp(CsType set) {
-    ASSERT(set != nullptr);
-    CppType s;
-    for each (auto value in set) {
-      s.insert(T::ToCpp(value));
+    static CppType ToCpp(CsType set) {
+        ASSERT(set != nullptr);
+        CppType s;
+        for each (auto value in set) {
+            s.insert(T::ToCpp(value));
+        }
+        return s;
     }
-    return s;
-  }
 
-  static CsType FromCpp(const CppType& s) {
-    auto set = gcnew System::Collections::Generic::HashSet<typename T::CsType>();
-    for (const auto& value : s) {
-      set->Add(T::FromCpp(value));
+    static CsType FromCpp(const CppType& s) {
+        auto set = gcnew System::Collections::Generic::HashSet<typename T::CsType>();
+        for (const auto& value : s) {
+            set->Add(T::FromCpp(value));
+        }
+        return set;
     }
-    return set;
-  }
 };
 
 template<class Key, class Value>
 struct Map {
-  using CppType = std::unordered_map<typename Key::CppType, typename Value::CppType>;
-  using CsType = System::Collections::Generic::Dictionary<typename Key::CsType, typename Value::CsType>^;
+    using CppType = std::unordered_map<typename Key::CppType, typename Value::CppType>;
+    using CsType = System::Collections::Generic::Dictionary<typename Key::CsType, typename Value::CsType>^;
 
-  static CppType ToCpp(CsType map) {
-    ASSERT(map != nullptr);
-    CppType m;
-    m.reserve(map->Count);
-    for each (auto& kvp in map) {
-      m.emplace(Key::ToCpp(kvp.Key), Value::ToCpp(kvp.Value));
+    static CppType ToCpp(CsType map) {
+        ASSERT(map != nullptr);
+        CppType m;
+        m.reserve(map->Count);
+        for each (auto& kvp in map) {
+            m.emplace(Key::ToCpp(kvp.Key), Value::ToCpp(kvp.Value));
+        }
+        return m;
     }
-    return m;
-  }
 
-  static CsType FromCpp(const CppType& m) {
-    auto map = gcnew System::Collections::Generic::Dictionary<typename Key::CsType, typename Value::CsType>(m.size());
-    for (const auto& kvp : m) {
-      map->Add(Key::FromCpp(kvp.first), Value::FromCpp(kvp.second));
+    static CsType FromCpp(const CppType& m) {
+        auto map = gcnew System::Collections::Generic::Dictionary<typename Key::CsType, typename Value::CsType>(m.size());
+        for (const auto& kvp : m) {
+            map->Add(Key::FromCpp(kvp.first), Value::FromCpp(kvp.second));
+        }
+        return map;
     }
-    return map;
-  }
 };
 
 } // namespace djinni

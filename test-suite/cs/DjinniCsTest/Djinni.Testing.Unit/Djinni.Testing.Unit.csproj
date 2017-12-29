@@ -37,6 +37,9 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientInterfaceImpl.cs" />
+    <Compile Include="ClientInterfaceTest.cs" />
+    <Compile Include="CppExceptionTest.cs" />
     <Compile Include="EnumTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TokenTest.cs" />
