@@ -21,7 +21,8 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
 
   override def fqParamType(tm: meta.MExpr): String = throw new AssertionError("not applicable")
 
-  override def returnType(ret: Option[TypeRef]): String = ret.fold("void")(toCppCliType(_))
+  override def returnType(ret: Option[TypeRef]): String = returnType(ret, Seq())
+  def returnType(ret: Option[TypeRef], scopeSymbols: Seq[String]): String = ret.fold("void")(toCppCliType(_, None, scopeSymbols, true))
 
   override def fqReturnType(ret: Option[TypeRef]): String = throw new AssertionError("not applicable")
 
