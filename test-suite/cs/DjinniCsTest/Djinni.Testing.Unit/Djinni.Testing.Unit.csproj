@@ -48,6 +48,8 @@
     <Compile Include="PrimitiveListTest.cs" />
     <Compile Include="PrimitivesTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RecordWithDerivingsTest.cs" />
+    <Compile Include="SetRecordTest.cs" />
     <Compile Include="TokenTest.cs" />
   </ItemGroup>
   <ItemGroup>
