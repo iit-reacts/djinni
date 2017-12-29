@@ -371,7 +371,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
 
     refs.cpp.add("#include \"Marshal.hpp\"")
     refs.cpp.add("#include \"Error.hpp\"")
-    refs.cpp.add("#include \"CsWrapperCache.hpp\"")
+    refs.cpp.add("#include \"WrapperCache.hpp\"")
     i.methods.foreach(m => {
       m.params.foreach(p => {
         def include(tm: MExpr): Unit = tm.base match {
@@ -405,11 +405,45 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
             w.wl(";")
             m.ret.fold()(r => w.wl(s"return ${marshal.fromCpp(r, "cs_result")};"))
           }
-          m.ret.fold()(r => w.wl(s"return ${dummyConstant(r)}; // Not reached! (Silencing compiler warnings.)"))
+          m.ret.fold()(r => w.wl(s"return ${dummyConstant(r)}; // Unreachable! (Silencing compiler warnings.)"))
         }
       })
 
       val csProxySelf = self + "CsProxy"
+      val cppProxySelf = self + "CppProxy"
+
+      if (i.ext.cpp) {
+        w.wl
+        w.w(s"public ref class $cppProxySelf : public $self").bracedSemi {
+          w.wl(s"using HandleType = ::djinni::CppProxyCache::Handle<std::shared_ptr<$cppSelf>>;")
+          w.wlOutdent("public:")
+          i.methods.filter(m => !m.static).foreach(m => {
+            w.wl
+            val ret = marshal.returnType(m.ret, methodNamesInScope)
+            val params = m.params.map(p => {
+              marshal.paramType(p.ty, methodNamesInScope) + " " + idCs.local(p.ident)
+            })
+            // Protect against conflicts with the class name.
+            val origMethodName = idCs.method(m.ident)
+            val methodName = if (self == origMethodName) "Do" + origMethodName else origMethodName
+            w.w(s"$ret $methodName" + params.mkString("(", ", ", ") override")).braced {
+              w.w("try").bracedEnd(" DJINNI_TRANSLATE_EXCEPTIONS()") {
+                // TODO Check non-optional params for null
+                val ret = m.ret.fold("")(_ => "auto cs_result = ")
+                val call = ret + "_cppRefHandle->get()->" + idCpp.method(m.ident) + "("
+                writeAlignedCall(w, call, m.params, ")", p => marshal.toCpp(p.ty, idCs.local(p.ident.name)))
+
+                w.wl(";")
+                m.ret.fold()(r => w.wl(s"return ${marshal.fromCpp(r, "cs_result")};"))
+              }
+              m.ret.fold()(r => w.wl(s"return ${dummyConstant(r)}; // Unreachable! (Silencing compiler warnings.)"))
+            }
+          })
+          w.wl
+          w.wlOutdent("private:")
+          w.wl(s"AutoPtr<HandleType> _cppRefHandle;")
+        }
+      }
 
       if (i.ext.cs) {
         w.wl
@@ -419,7 +453,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           w.wl("using HandleType = ::djinni::CsProxyCache::Handle<::djinni::CsRef<CsType>>;")
           w.wlOutdent("public:")
           w.wl(s"$csProxySelf(CsRefType cs) : m_djinni_private_proxy_handle(std::move(cs)) {}")
-          w.wl(s"$csProxySelf(const ::djinni::CsOwningImplPointer& ptr) : $csProxySelf(CsRefType(dynamic_cast<CsType>(ptr.get()))) {}")
+          w.wl(s"$csProxySelf(const ::djinni::CsRef<System::Object^>& ptr) : $csProxySelf(CsRefType(dynamic_cast<CsType>(ptr.get()))) {}")
           for (m <- i.methods) {
             w.wl
             val ret = cppMarshal.fqReturnType(m.ret)
@@ -488,8 +522,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
               w.wl("return cpp_ptr->djinni_private_get_proxied_cs_object();")
             }
           }
-          // TODO
-          w.wl(s"return nullptr; //::djinni::get_cpp_proxy<$csProxySelf>(cpp);")
+          w.wl(s"return ::djinni::get_cpp_proxy<$cppProxySelf^>(cpp);")
         } else {
           // Neither C# nor C++.  Unusable, but generate compilable code.
           w.wl("DJINNI_UNIMPLEMENTED(\"Interface not implementable in any language.\");")
