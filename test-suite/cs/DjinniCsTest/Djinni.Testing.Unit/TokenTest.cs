@@ -30,12 +30,24 @@ namespace Djinni.Testing.Unit
         [Test]
         public void TestCppToken()
         {
-            UserToken token = TestHelpers.CreateCppToken();
+            var token = TestHelpers.CreateCppToken();
             Assert.AreSame(token, TestHelpers.TokenId(token));
-            TestHelpers.CheckCppToken(token);
-            // token = null;
-            // System.gc();
-            // System.runFinalization();
+            Assert.That(() => TestHelpers.CheckCppToken(token), Throws.Nothing);
         }
-    }
+
+        [Test]
+        public void TestTokenType()
+        {
+            Assert.That(() => TestHelpers.CheckTokenType(new CsToken(), "C#"), Throws.Nothing);
+            Assert.That(() => TestHelpers.CheckTokenType(TestHelpers.CreateCppToken(), "C++"), Throws.Nothing);
+            Assert.That(() => TestHelpers.CheckTokenType(new CsToken(), "foo"), Throws.Exception);
+            Assert.That(() => TestHelpers.CheckTokenType(TestHelpers.CreateCppToken(), "foo"), Throws.Exception);
+        }
+
+        [Test]
+        public void TestNotCppToken()
+        {
+            Assert.That(() => TestHelpers.CheckCppToken(new CsToken()), Throws.Exception);
+        }
+}
 }

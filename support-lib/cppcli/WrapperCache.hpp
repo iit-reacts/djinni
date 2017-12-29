@@ -92,26 +92,31 @@ struct CppProxyCacheTraits {
 extern template class ProxyCache<CppProxyCacheTraits>;
 using CppProxyCache = ProxyCache<CppProxyCacheTraits>;
 
-//// Helper for get_cpp_proxy_impl that takes a std::shared_ptr.
-//template <typename CsType, typename CppType>
-//CsType get_cpp_proxy_impl(const std::shared_ptr<CppType> & cppRef) {
-//    return CppProxyCache::get(
-//        typeid(cppRef),
-//        cppRef,
-//        [](const std::shared_ptr<void> & cppRef) -> std::pair<CppProxyCacheTraits::OwningProxyPointer, void *> {
-//        return {
-//            [[CsType alloc] initWithCpp:std::static_pointer_cast<CppType>(cppRef)],
-//            cppRef.get()
-//        };
-//    }
-//    );
-//}
+// If the type T has a handle declarator (^), provides the member typedef type which is the type referred to by T. Otherwise type is T.
+template <class T> struct remove_handle { typedef T type; };
+template <class T> struct remove_handle<T^> { typedef T type; };
+
+// Helper for get_cpp_proxy_impl that takes a std::shared_ptr.
+template <typename CsType, typename CppType>
+CsType get_cpp_proxy_impl(const std::shared_ptr<CppType> & cppRef) {
+    auto proxy = CppProxyCache::get(
+        typeid(cppRef),
+        cppRef,
+        [](const std::shared_ptr<void> & cppRef) -> std::pair<CppProxyCacheTraits::OwningProxyPointer, void *> {
+        return {
+            CsRef<System::Object^>(gcnew typename remove_handle<CsType>::type(std::static_pointer_cast<CppType>(cppRef))),
+            cppRef.get()
+        };
+    }
+    );
+    return dynamic_cast<CsType>(proxy.get());
+}
 
 // get_cpp_proxy takes any smart pointer type, as long as it can be implicitly cast
 // to std::shared_ptr. This means get_cpp_proxy can also be passed non-nullable pointers.
 template <typename CsType, typename CppPtrType>
 CsType get_cpp_proxy(const CppPtrType& cppRef) {
-    return nullptr; // get_cpp_proxy_impl<CsType, typename std::remove_reference<decltype(*cppRef)>::type>(cppRef);
+    return get_cpp_proxy_impl<CsType, typename std::remove_reference<decltype(*cppRef)>::type>(cppRef);
 }
 
 }

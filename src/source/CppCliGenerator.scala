@@ -386,9 +386,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     })
 
     writeCppCliCppFile(ident, origin, refs.cpp, w => {
-      val skipFirst = new SkipFirst
       i.methods.filter(m => m.static).foreach(m => {
-        skipFirst {w.wl}
         val params = m.params.map(p => {
           marshal.paramType(p.ty, methodNamesInScope) + " " + idCs.local(p.ident)
         })
@@ -407,16 +405,18 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           }
           m.ret.fold()(r => w.wl(s"return ${dummyConstant(r)}; // Unreachable! (Silencing compiler warnings.)"))
         }
+        w.wl
       })
 
-      val csProxySelf = self + "CsProxy"
       val cppProxySelf = self + "CppProxy"
+      val csProxySelf = self + "CsProxy"
 
       if (i.ext.cpp) {
-        w.wl
         w.w(s"public ref class $cppProxySelf : public $self").bracedSemi {
-          w.wl(s"using HandleType = ::djinni::CppProxyCache::Handle<std::shared_ptr<$cppSelf>>;")
+          w.wl(s"using CppType = std::shared_ptr<$cppSelf>;")
+          w.wl("using HandleType = ::djinni::CppProxyCache::Handle<CppType>;")
           w.wlOutdent("public:")
+          w.wl(s"$cppProxySelf(const CppType& cppRef) : _cppRefHandle(new HandleType(cppRef)) {}")
           i.methods.filter(m => !m.static).foreach(m => {
             w.wl
             val ret = marshal.returnType(m.ret, methodNamesInScope)
@@ -440,13 +440,17 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
             }
           })
           w.wl
+          w.w("CppType djinni_private_get_proxied_cpp_object()").braced {
+            w.wl("return _cppRefHandle->get();")
+          }
+          w.wl
           w.wlOutdent("private:")
           w.wl(s"AutoPtr<HandleType> _cppRefHandle;")
         }
+        w.wl
       }
 
       if (i.ext.cs) {
-        w.wl
         w.w(s"class $csProxySelf : public $cppSelf").bracedSemi {
           w.wl(s"using CsType = ${withCppCliNs(spec.csNamespace, self)}^;")
           w.wl(s"using CsRefType = ::djinni::CsRef<CsType>;")
@@ -477,27 +481,28 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           w.wlOutdent("private:")
           w.wl("HandleType m_djinni_private_proxy_handle;")
         }
+        w.wl
       }
 
       // To/From C++
       val CppType = s"$self::CppType"
       val CppOptType = s"$self::CppOptType"
       val CsType = s"$self::CsType"
-      w.wl
       w.wl(s"$CppType $self::ToCpp($CsType cs)").braced {
         w.w("if (!cs)").braced {
           w.wl("return nullptr;")
         }
         if (i.ext.cpp && !i.ext.cs) {
-          // C++ only. In this case we generate a class instead of a protocol, so
-          // we don't have to do any casting at all, just access cppRef directly.
-          // TODO
-          w.wl("DJINNI_UNIMPLEMENTED(\"Waiting for C++-only impl.\");")
+          // C++ only. In this case we *must* unwrap a proxy object - the dynamic_cast will
+          // throw bad_cast if we gave it something of the wrong type.
+          w.wl(s"return dynamic_cast<$cppProxySelf^>(cs)->djinni_private_get_proxied_cpp_object();")
         } else if (i.ext.cpp || i.ext.cs) {
           // C# only, or C# and C++.
           if (i.ext.cpp) {
             // If it could be implemented in C++, we might have to unwrap a proxy object.
-            // TODO
+            w.wl(s"if (auto cs_ref = dynamic_cast<$cppProxySelf^>(cs))").braced {
+              w.wl("return cs_ref->djinni_private_get_proxied_cpp_object();")
+            }
           }
           w.wl(s"return ::djinni::get_cs_proxy<$csProxySelf>(cs);")
         } else {
