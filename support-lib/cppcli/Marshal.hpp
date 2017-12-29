@@ -137,14 +137,16 @@ struct Optional {
     static CppType ToCpp(O obj) {
         if (obj != nullptr) {
             return T::ToCpp(obj);
-        } else {
-            return CppType();
         }
+        return CppType();
     }
 
     // Enabled for value types that require System::Nullable<>.
     template <class O, typename std::enable_if<!IsRef<O>::value, int>::type = 0>
     static CppType ToCpp(O obj) {
+        if (obj.HasValue) {
+            return T::ToCpp(obj.Value);
+        }
         return CppType();
     }
 
