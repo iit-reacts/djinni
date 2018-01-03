@@ -51,6 +51,7 @@
     <Compile Include="RecordWithDerivingsTest.cs" />
     <Compile Include="SetRecordTest.cs" />
     <Compile Include="TokenTest.cs" />
+    <Compile Include="WcharTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

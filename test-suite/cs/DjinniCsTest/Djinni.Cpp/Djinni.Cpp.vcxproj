@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\handwritten-src\cpp\wchar_test_helpers.cpp" />
     <ClInclude Include="..\..\..\djinni-output-temp\cpp\*.hpp" />
     <ClCompile Include="..\..\..\djinni-output-temp\cpp\*.cpp" />
     <ClCompile Include="..\..\..\handwritten-src\cpp\cpp_exception_impl.cpp" />
