@@ -13,7 +13,7 @@ ref struct AutoPtr {
         _ptr = 0;
     }
     !AutoPtr() {
-        ASSERT(0 == _ptr);
+        //ASSERT(0 == _ptr);
         delete _ptr;
     }
     T* operator->() {
