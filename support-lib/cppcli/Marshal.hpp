@@ -62,6 +62,20 @@ struct String {
     }
 };
 
+struct WString {
+    using CppType = std::wstring;
+    using CsType = System::String^;
+
+    static CppType ToCpp(CsType string) {
+        ASSERT(string != nullptr);
+        return msclr::interop::marshal_as<CppType>(string);
+    }
+
+    static CsType FromCpp(const CppType& string) {
+        return msclr::interop::marshal_as<CsType>(string);
+    }
+};
+
 struct Date {
     using CppType = std::chrono::system_clock::time_point;
     using CsType = System::DateTime;
