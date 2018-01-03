@@ -57,16 +57,10 @@ public:
 private:
     T* _mutex;
 };
-
-using MutexType = Mutex;
-
-template <class T>
-using LockType = UniqueLock<T>;
-
 #else
 #include <mutex>
-using MutexType = std::mutex;
-using LockType = std::unique_lock
+using Mutex = std::mutex;
+using UniqueLock = std::unique_lock
 #endif
 
 // """
@@ -127,7 +121,7 @@ public:
     OwningProxyPointer get(const std::type_index & tag,
                            const OwningImplPointer & impl,
                            AllocatorFunction * alloc) {
-        UniqueLock<MutexType> lock(m_mutex);
+        UniqueLock<Mutex> lock(m_mutex);
         UnowningImplPointer ptr = get_unowning(impl);
         auto existing_proxy_iter = m_mapping.find({tag, ptr});
         if (existing_proxy_iter != m_mapping.end()) {
@@ -149,7 +143,7 @@ public:
      * Erase an object from the proxy cache.
      */
     void remove(const std::type_index & tag, const UnowningImplPointer & impl_unowning) {
-        UniqueLock<MutexType> lock(m_mutex);
+        UniqueLock<Mutex> lock(m_mutex);
         auto it = m_mapping.find({tag, impl_unowning});
         if (it != m_mapping.end()) {
             // The entry in the map should already be expired: this is called from Handle's
@@ -182,7 +176,7 @@ private:
     };
 
     std::unordered_map<Key, WeakProxyPointer, KeyHash, KeyEqual> m_mapping;
-    MutexType m_mutex;
+    Mutex m_mutex;
 
     // Only ProxyCache<Traits>::get_base() can allocate these objects.
     Pimpl() = default;
