@@ -32,20 +32,20 @@ namespace Djinni.Testing.Unit
         [Test]
         public void TestCsMapToCppMap()
         {
-            Assert.That(() => TestHelpers.CheckMap(CsMap));
+            Assert.That(() => TestHelpers.CheckMap(CsMap), Is.True);
         }
 
         [Test]
         public void TestEmptyCsMapToCppMap()
         {
-            Assert.That(() => TestHelpers.CheckEmptyMap(new Dictionary<string, long>()));
+            Assert.That(() => TestHelpers.CheckEmptyMap(new Dictionary<string, long>()), Is.True);
         }
 
         [Test]
         public void TestCsMapListToCppMapList()
         {
             var mapList = new List<Dictionary<string, long>>{ CsMap };
-            Assert.That(() => TestHelpers.CheckMapListRecord(new MapListRecord(mapList)));
+            Assert.That(() => TestHelpers.CheckMapListRecord(new MapListRecord(mapList)), Is.True);
         }
 
         private static Dictionary<string, long> CsMap => new Dictionary<string, long>

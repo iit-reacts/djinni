@@ -18,20 +18,20 @@ namespace Djinni.Testing.Unit
         public void TestTokens()
         {
             UserToken token = new CsToken();
-            Assert.AreSame(token, TestHelpers.TokenId(token));
+            Assert.That(TestHelpers.TokenId(token), Is.SameAs(token));
         }
 
         [Test]
         public void TestNullToken()
         {
-            Assert.AreSame(null, TestHelpers.TokenId(null));
+            Assert.That(TestHelpers.TokenId(null), Is.EqualTo(null));
         }
 
         [Test]
         public void TestCppToken()
         {
             var token = TestHelpers.CreateCppToken();
-            Assert.AreSame(token, TestHelpers.TokenId(token));
+            Assert.That(TestHelpers.TokenId(token), Is.SameAs(token));
             Assert.That(() => TestHelpers.CheckCppToken(token), Throws.Nothing);
         }
 
