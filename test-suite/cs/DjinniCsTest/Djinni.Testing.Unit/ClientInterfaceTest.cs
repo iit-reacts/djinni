@@ -6,7 +6,7 @@ namespace Djinni.Testing.Unit
     [TestFixture]
     public class ClientInterfaceTest
     {
-        private ClientInterfaceImpl _csClientInterface;
+        private ClientInterface _csClientInterface;
 
         [SetUp]
         public void SetUp()
