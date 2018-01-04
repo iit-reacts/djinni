@@ -5,25 +5,18 @@
 
 namespace djinni {
 
-struct CsIdentityHash {
-  size_t operator() (CsProxyCacheTraits::UnowningImplPointer obj) const;
-};
-struct CsIdentityEquals {
-  bool operator() (CsProxyCacheTraits::UnowningImplPointer obj1, CsProxyCacheTraits::UnowningImplPointer obj2) const;
-};
+using UnowningImplPointer = CsProxyCacheTraits::UnowningImplPointer;
 
-size_t CsIdentityHash::operator() (CsProxyCacheTraits::UnowningImplPointer obj) const {
-  //JNIEnv * const env = jniGetThreadEnv();
-  //const SystemClassInfo & sys = JniClass<SystemClassInfo>::get();
-  //jint res = env->CallStaticIntMethod(sys.clazz.get(), sys.staticmethIdentityHashCode, obj);
-  //jniExceptionCheck(env);
-  return 0;
+struct CsHashCode { size_t operator() (UnowningImplPointer obj) const; };
+struct CsReferenceEquals { bool operator() (UnowningImplPointer obj1, UnowningImplPointer obj2) const; };
+
+size_t CsHashCode::operator() (UnowningImplPointer obj) const {
+    return obj.hash_code();
 }
-bool CsIdentityEquals::operator() (CsProxyCacheTraits::UnowningImplPointer obj1, CsProxyCacheTraits::UnowningImplPointer obj2) const {
-  //JNIEnv * const env = jniGetThreadEnv();
-  //const bool res = env->IsSameObject(obj1, obj2);
-  //jniExceptionCheck(env);
-  return false;
+bool CsReferenceEquals::operator() (UnowningImplPointer obj1, UnowningImplPointer obj2) const {
+    auto ptr1 = obj1.lock();
+    auto ptr2 = obj2.lock();
+    return System::Object::ReferenceEquals(ptr1.get(), ptr2.get());
 }
 
 template class ProxyCache<CsProxyCacheTraits>;

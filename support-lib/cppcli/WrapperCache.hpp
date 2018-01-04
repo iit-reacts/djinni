@@ -21,45 +21,46 @@ public:
     CsRef(const CsRef&) = default;
     CsRef& operator=(const CsRef&) = default;
 
-    operator bool() {
-        return static_cast<CsType>(_ref) != nullptr;
-    }
-    CsType operator->() const {
-        return get();
-    }
-    CsType get() const {
-        return _ref;
-    }
+    operator bool() { return static_cast<CsType>(_ref) != nullptr; }
+    CsType operator->() const { return get(); }
+    CsType get() const { return _ref; }
 
 private:
     gcroot<CsType> _ref;
 };
 
+/*
+ * Native wrapper to C#'s WeakReference type. Instances of this type do not prevent the
+ * garbage collector from reclaiming referred-to objects.
+ */
 class WeakCsRef {
 public:
-    WeakCsRef(System::Object^ ref) : _weak_ref(gcnew System::WeakReference(ref)) {}
-    WeakCsRef(const CsRef<System::Object^>& ref) : _weak_ref(gcnew System::WeakReference(ref.get())) {}
+    WeakCsRef(System::Object^ ref)
+    : _weak_ref(gcnew System::WeakReference(ref))
+    , _hash_code(ref->GetHashCode()) {}
 
-    CsRef<System::Object^> lock() const {
-        return dynamic_cast<System::Object^>(_weak_ref->Target);
-    }
-    bool expired() const {
-        return !_weak_ref->IsAlive;
-    }
+    WeakCsRef(const CsRef<System::Object^>& ref)
+    : _weak_ref(gcnew System::WeakReference(ref.get()))
+    , _hash_code(ref->GetHashCode()) {}
+
+    CsRef<System::Object^> lock() const { return dynamic_cast<System::Object^>(_weak_ref->Target); }
+    bool expired() const { return !_weak_ref->IsAlive; }
+    size_t hash_code() { return _hash_code; }
 
 private:
     CsRef<System::WeakReference^> _weak_ref;
+    size_t _hash_code;
 };
 
-struct CsIdentityHash;
-struct CsIdentityEquals;
+struct CsHashCode;
+struct CsReferenceEquals;
 struct CsProxyCacheTraits {
   using UnowningImplPointer = WeakCsRef;
   using OwningImplPointer = CsRef<System::Object^>;
   using OwningProxyPointer = std::shared_ptr<void>;
   using WeakProxyPointer = std::weak_ptr<void>;
-  using UnowningImplPointerHash = CsIdentityHash;
-  using UnowningImplPointerEqual = CsIdentityEquals;
+  using UnowningImplPointerHash = CsHashCode;
+  using UnowningImplPointerEqual = CsReferenceEquals;
 };
 
 // This declares that GenericProxyCache will be instantiated separately. The actual
