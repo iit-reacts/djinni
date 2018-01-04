@@ -1,8 +1,5 @@
 package djinni
 
-import java.io.StringWriter
-import javax.xml.stream.events.Namespace
-
 import djinni.ast.Record.DerivingType
 import djinni.ast.Record.DerivingType.DerivingType
 import djinni.ast._
@@ -130,7 +127,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     })
 
     writeCppCliCppFile(ident, origin, refs.hpp, w => {
-      // Empty: making sure the symbol gets included in the build.
+      w.wl("// Empty... making sure the symbols get included in the build.")
     })
   }
 
@@ -155,7 +152,6 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     val cppSelf = cppMarshal.fqTypename(ident, r)
 
     refs.hpp.add("#include " + q(spec.cppFileIdentStyle(ident) + "." + spec.cppHeaderExt))
-    refs.hpp.add("#include <memory>")
 
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
       writeDoc(w, doc)
@@ -224,6 +220,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     })
 
     refs.cpp.add("#include \"Marshal.hpp\"")
+    refs.cpp.add("#include <memory>")
 
     writeCppCliCppFile(ident, origin, refs.cpp, w => {
       // Constructor.
