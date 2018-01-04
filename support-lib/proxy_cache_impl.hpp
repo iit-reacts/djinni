@@ -57,11 +57,11 @@ public:
 private:
     T* _mutex;
 };
-#else
+#else // __cplusplus_cli
 #include <mutex>
 using Mutex = std::mutex;
 using UniqueLock = std::unique_lock
-#endif
+#endif // __cplusplus_cli
 
 // """
 //    This place is not a place of honor.
@@ -161,6 +161,9 @@ public:
         }
     }
 
+    // Only ProxyCache<Traits>::get_base() can allocate these objects.
+    Pimpl() = default;
+
 private:
     struct KeyHash {
         std::size_t operator()(const Key & k) const {
@@ -177,10 +180,6 @@ private:
 
     std::unordered_map<Key, WeakProxyPointer, KeyHash, KeyEqual> m_mapping;
     Mutex m_mutex;
-
-    // Only ProxyCache<Traits>::get_base() can allocate these objects.
-    Pimpl() = default;
-    friend class ProxyCache<Traits>;
 };
 
 template <typename Traits>
@@ -190,12 +189,38 @@ void ProxyCache<Traits>::cleanup(const std::shared_ptr<Pimpl> & base,
     base->remove(tag, ptr);
 }
 
+#ifdef __cplusplus_cli
 /*
- * C++/CLI (Windows) workaround to avoid the "this function must be called in the default
- * domain" error.
+ * In C++/CLI (Windows), native static variables can only be initialized in the default
+ * AppDomain. As that would be a huge limiting factor for the users of this library, we
+ * work around it by holding the Pimpl instance in a managed class. Also, since managed
+ * classes  can't hold native types by value, we keep the instance as a pointer to
+ * shared_ptr, instantiate it in the static constructor, and schedule it's deletion to take
+ * place when the current AppDomain gets unloaded.
  */
-// TODO This is causing the program to hang on exit.
-#pragma managed(push, off)
+template <typename Traits>
+private ref class SingletonHolder {
+private:
+    using Pimpl = typename ProxyCache<Traits>::Pimpl;
+    using PimplPtr = std::shared_ptr<Pimpl>;
+    static PimplPtr* _instance;
+    static SingletonHolder() {
+        _instance = new PimplPtr(new Pimpl);
+        System::AppDomain::CurrentDomain->DomainUnload += gcnew System::EventHandler(&OnDomainUnload);
+    }
+    static void OnDomainUnload(System::Object^, System::EventArgs^) {
+        System::AppDomain::CurrentDomain->DomainUnload -= gcnew System::EventHandler(&OnDomainUnload);
+        delete _instance;
+    }
+public:
+    static property PimplPtr* Instance {
+        PimplPtr* get() {
+            return _instance;
+        }
+    }
+};
+#endif // __cplusplus_cli
+
 /*
  * Magic-static singleton.
  *
@@ -207,12 +232,15 @@ void ProxyCache<Traits>::cleanup(const std::shared_ptr<Pimpl> & base,
  */
 template <typename Traits>
 auto ProxyCache<Traits>::get_base() -> const std::shared_ptr<Pimpl> & {
+#ifndef __cplusplus_cli
     static const std::shared_ptr<Pimpl> instance(new Pimpl);
     // Return by const-ref. This is safe to call any time except during static destruction.
     // Returning by reference lets us avoid touching the refcount unless needed.
     return instance;
+#else // __cplusplus_cli
+    return *SingletonHolder<Traits>::Instance;
+#endif // __cplusplus_cli
 }
-#pragma managed(pop)
 
 template <typename Traits>
 auto ProxyCache<Traits>::get(const std::type_index & tag,
