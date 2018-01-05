@@ -16,6 +16,7 @@ class YamlGenerator(spec: Spec) extends Generator(spec) {
   val objcppMarshal = new ObjcppMarshal(spec)
   val javaMarshal = new JavaMarshal(spec)
   val jniMarshal = new JNIMarshal(spec)
+  val cppCliMarshal = new CppCliMarshal(spec)
 
   case class QuotedString(str: String) // For anything that migt require escaping
 
@@ -51,6 +52,7 @@ class YamlGenerator(spec: Spec) extends Generator(spec) {
     w.wl("objcpp:").nested { write(w, objcpp(td)) }
     w.wl("java:").nested { write(w, java(td)) }
     w.wl("jni:").nested { write(w, jni(td)) }
+    w.wl("cs:").nested { write(w, cs(td)) }
   }
 
   private def write(w: IndentWriter, m: Map[String, Any]) {
@@ -146,6 +148,13 @@ class YamlGenerator(spec: Spec) extends Generator(spec) {
     "header" -> QuotedString(jniMarshal.include(td.ident)),
     "typename" -> jniMarshal.fqParamType(mexpr(td)),
     "typeSignature" -> QuotedString(jniMarshal.fqTypename(td.ident, td.body))
+  )
+
+  private def cs(td: TypeDecl) = Map[String, Any](
+    "translator" -> QuotedString(cppCliMarshal.helperName(mexpr(td))),
+    "header" -> QuotedString(cppCliMarshal.include(td.ident)),
+    "typename" -> cppCliMarshal.fqParamType(mexpr(td)),
+    "reference" -> cppCliMarshal.isReference(td)
   )
 
   // TODO: there has to be a way to do all this without the MExpr/Meta conversions?

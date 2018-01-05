@@ -19,7 +19,7 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
   def paramType(tm: MExpr, scopeSymbols: Seq[String]): String = toCppCliType(tm, None, scopeSymbols, true)
   def paramType(ty: TypeRef, scopeSymbols: Seq[String]): String = paramType(ty.resolved, scopeSymbols)
 
-  override def fqParamType(tm: meta.MExpr): String = throw new AssertionError("not applicable")
+  override def fqParamType(tm: meta.MExpr): String = paramType(tm)
 
   override def returnType(ret: Option[TypeRef]): String = returnType(ret, Seq())
   def returnType(ret: Option[TypeRef], scopeSymbols: Seq[String]): String = ret.fold("void")(toCppCliType(_, None, scopeSymbols, true))
@@ -47,6 +47,12 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
 
   def include(ident: String, isExtendedRecord: Boolean = false): String = {
     q(spec.csIdentStyle.file(ident) + "." + spec.cppHeaderExt)
+  }
+
+  def isReference(td: TypeDecl) = td.body match {
+    case i: Interface => true
+    case r: Record => true
+    case e: Enum =>  false
   }
 
   def references(m: Meta, exclude: String): Seq[SymbolReference] = m match {

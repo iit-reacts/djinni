@@ -69,9 +69,13 @@ cd $base_dir
     --cpp-extended-record-include-prefix "../../handwritten-src/cpp/" `
     --cpp-use-wide-strings true `
     `
-    --cs-out "$temp_out/cs" `
+    --cs-out "$temp_out_relative/cs" `
     --cs-namespace Djinni.TestSuite `
-    --cppcli-out "$temp_out/cppcli" `
+    --cppcli-out "$temp_out_relative/cppcli" `
+    `
+    --yaml-out "$temp_out_relative/yaml" `
+    --yaml-out-file "yaml-test.yaml" `
+    --yaml-prefix "test_" `
     `
     --idl "$wchar_in_relative"
 
@@ -83,9 +87,27 @@ cd $base_dir
     --cpp-optional-header "\`"../../handwritten-src/cpp/optional.hpp\`"" `
     --cpp-extended-record-include-prefix "../../handwritten-src/cpp/" `
     `
-    --cs-out "$temp_out/cs" `
+    --cs-out "$temp_out_relative/cs" `
     --cs-namespace Djinni.TestSuite `
-    --cppcli-out "$temp_out/cppcli" `
+    --cppcli-out "$temp_out_relative/cppcli" `
+    `
+    --yaml-out "$temp_out_relative/yaml" `
+    --yaml-out-file "yaml-test.yaml" `
+    --yaml-prefix "test_" `
     `
     --idl "$in_relative" `
     --idl-include-path "djinni/vendor"
+
+# Make sure we can parse back our own generated YAML file
+cp "$base_dir/djinni/yaml-test.djinni" "$temp_out/yaml"
+& "$base_dir\..\src\target\start.bat" `
+    --cpp-out "$temp_out_relative/cpp" `
+    --ident-cpp-enum-type foo_bar `
+    --cpp-optional-template "std::experimental::optional" `
+    --cpp-optional-header "\`"../../handwritten-src/cpp/optional.hpp\`"" `
+    `
+    --cs-out "$temp_out_relative/cs" `
+    --cs-namespace Djinni.TestSuite `
+    --cppcli-out "$temp_out_relative/cppcli" `
+    `
+    --idl "$temp_out_relative/yaml/yaml-test.djinni"
