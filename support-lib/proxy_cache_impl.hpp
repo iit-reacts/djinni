@@ -60,7 +60,7 @@ private:
 #else // __cplusplus_cli
 #include <mutex>
 using Mutex = std::mutex;
-using UniqueLock = std::unique_lock
+template<class T> using UniqueLock = std::unique_lock<T>;
 #endif // __cplusplus_cli
 
 // """
