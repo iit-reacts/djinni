@@ -408,7 +408,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       val csProxySelf = self + "CsProxy"
 
       if (i.ext.cpp) {
-        w.w(s"public ref class $cppProxySelf : public $self").bracedSemi {
+        w.w(s"ref class $cppProxySelf : public $self").bracedSemi {
           w.wl(s"using CppType = std::shared_ptr<$cppSelf>;")
           w.wl("using HandleType = ::djinni::CppProxyCache::Handle<CppType>;")
           w.wlOutdent("public:")
