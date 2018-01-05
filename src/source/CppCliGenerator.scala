@@ -156,13 +156,12 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
       writeDoc(w, doc)
 
-      val inheritanceList = if (r.derivingTypes.nonEmpty) {
-        r.derivingTypes.map {
-          case DerivingType.Eq => s"IEquatable<$self^>"
-          case DerivingType.Ord => s"System::IComparable<$self^>"
-          case _ => throw new AssertionError("unreachable")
-        }.mkString(" : ", ", ", "")
-      } else ""
+      val interfaces = scala.collection.mutable.ArrayBuffer[String]()
+      if (r.derivingTypes.contains(DerivingType.Ord))
+        interfaces += s"System::IComparable<$self^>"
+      if (r.derivingTypes.contains(DerivingType.Eq))
+        interfaces += s"IEquatable<$self^>"
+      val inheritanceList = if (interfaces.isEmpty) "" else interfaces.mkString(" : ", ", ", "")
 
       w.w(s"public ref class $self$inheritanceList").bracedSemi {
         w.wlOutdent("public:")
