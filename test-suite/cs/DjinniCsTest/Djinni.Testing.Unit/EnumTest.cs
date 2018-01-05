@@ -22,5 +22,42 @@ namespace Djinni.Testing.Unit
             };
             Assert.That(() => TestHelpers.CheckEnumMap(m), Throws.Nothing);
         }
+
+        [Test]
+        public void TestAccessFlagRoundtrip()
+        {
+            AccessFlags[] flags =
+            {
+                AccessFlags.Nobody,
+                AccessFlags.Everybody,
+                AccessFlags.OwnerRead,
+                AccessFlags.OwnerRead | AccessFlags.OwnerWrite,
+                AccessFlags.OwnerRead | AccessFlags.OwnerWrite | AccessFlags.OwnerExecute
+            };
+
+            foreach (var flag in flags)
+            {
+                Assert.That(FlagRoundtrip.RoundtripAccess(flag), Is.EqualTo(flag));
+                Assert.That(FlagRoundtrip.RoundtripAccessBoxed(flag), Is.EqualTo(flag));
+            }
+            Assert.That(FlagRoundtrip.RoundtripAccessBoxed(null), Is.Null);
+        }
+
+        [Test]
+        public void TestEmptyFlagRoundtrip()
+        {
+            EmptyFlags[] flags =
+            {
+                EmptyFlags.None,
+                EmptyFlags.All
+            };
+
+            foreach (var flag in flags)
+            {
+                Assert.That(FlagRoundtrip.RoundtripEmpty(flag), Is.EqualTo(flag));
+                Assert.That(FlagRoundtrip.RoundtripEmptyBoxed(flag), Is.EqualTo(flag));
+            }
+            Assert.That(FlagRoundtrip.RoundtripEmptyBoxed(null), Is.Null);
+        }
     }
 }

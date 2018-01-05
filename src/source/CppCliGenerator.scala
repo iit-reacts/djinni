@@ -118,11 +118,11 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
 
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
       writeDoc(w, doc)
+      if (e.flags) w.wl("[System::Flags]")
       w.w(s"public enum class ${marshal.typename(ident, e)}").bracedSemi {
-        for (o <- e.options) {
-          writeDoc(w, o.doc)
-          w.wl(idCs.enum(o.ident.name) + ",")
-        }
+        writeEnumOptionNone(w, e, idCs.enum(_))
+        writeEnumOptions(w, e, idCs.enum(_))
+        writeEnumOptionAll(w, e, idCs.enum(_))
       }
     })
 
