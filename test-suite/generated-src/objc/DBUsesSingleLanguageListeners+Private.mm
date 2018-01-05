@@ -3,6 +3,7 @@
 
 #import "DBUsesSingleLanguageListeners+Private.h"
 #import "DBUsesSingleLanguageListeners.h"
+#import "DBCsOnlyListener+Private.h"
 #import "DBJavaOnlyListener+Private.h"
 #import "DBObjcOnlyListener+Private.h"
 #import "DJICppWrapperCache+Private.h"
@@ -58,6 +59,19 @@ static_assert(__has_feature(objc_arc), "Djinni requires ARC to be enabled for th
     } DJINNI_TRANSLATE_EXCEPTIONS()
 }
 
+- (void)callForCs:(nullable DBCsOnlyListener *)l {
+    try {
+        _cppRefHandle.get()->callForCs(::djinni_generated::CsOnlyListener::toCpp(l));
+    } DJINNI_TRANSLATE_EXCEPTIONS()
+}
+
+- (nullable DBCsOnlyListener *)returnForCs {
+    try {
+        auto objcpp_result_ = _cppRefHandle.get()->returnForCs();
+        return ::djinni_generated::CsOnlyListener::fromCpp(objcpp_result_);
+    } DJINNI_TRANSLATE_EXCEPTIONS()
+}
+
 namespace djinni_generated {
 
 class UsesSingleLanguageListeners::ObjcProxy final
@@ -91,6 +105,19 @@ public:
         @autoreleasepool {
             auto objcpp_result_ = [djinni_private_get_proxied_objc_object() returnForJava];
             return ::djinni_generated::JavaOnlyListener::toCpp(objcpp_result_);
+        }
+    }
+    void callForCs(const std::shared_ptr<::testsuite::CsOnlyListener> & c_l) override
+    {
+        @autoreleasepool {
+            [djinni_private_get_proxied_objc_object() callForCs:(::djinni_generated::CsOnlyListener::fromCpp(c_l))];
+        }
+    }
+    std::shared_ptr<::testsuite::CsOnlyListener> returnForCs() override
+    {
+        @autoreleasepool {
+            auto objcpp_result_ = [djinni_private_get_proxied_objc_object() returnForCs];
+            return ::djinni_generated::CsOnlyListener::toCpp(objcpp_result_);
         }
     }
 };

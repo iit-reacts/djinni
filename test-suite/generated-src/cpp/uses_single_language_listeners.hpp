@@ -7,6 +7,7 @@
 
 namespace testsuite {
 
+class CsOnlyListener;
 class JavaOnlyListener;
 class ObjcOnlyListener;
 
@@ -25,6 +26,10 @@ public:
     virtual void callForJava(const std::shared_ptr<JavaOnlyListener> & l) = 0;
 
     virtual std::shared_ptr<JavaOnlyListener> returnForJava() = 0;
+
+    virtual void callForCs(const std::shared_ptr<CsOnlyListener> & l) = 0;
+
+    virtual std::shared_ptr<CsOnlyListener> returnForCs() = 0;
 };
 
 }  // namespace testsuite
