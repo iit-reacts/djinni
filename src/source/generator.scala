@@ -76,11 +76,9 @@ package object generatorTools {
                    objcppNamespace: String,
                    objcBaseLibIncludePrefix: String,
                    objcSwiftBridgingHeaderWriter: Option[Writer],
-                   csOutFolder: Option[File],
                    cppCliOutFolder: Option[File],
                    csIdentStyle: CsIdentStyle,
                    csNamespace: String,
-                   cppCliNamespace: String,
                    outFileListWriter: Option[Writer],
                    skipGeneration: Boolean,
                    yamlOutFolder: Option[File],
@@ -229,12 +227,6 @@ package object generatorTools {
         SwiftBridgingHeaderGenerator.writeAutogenerationWarning(spec.objcSwiftBridgingHeaderWriter.get)
         new SwiftBridgingHeaderGenerator(spec).generate(idl)
       }
-//      if (spec.csOutFolder.isDefined) {
-//        if (!spec.skipGeneration) {
-//          createFolder("C#", spec.csOutFolder.get)
-//        }
-//        new CsGenerator(spec).generate(idl)
-//      }
       if (spec.cppCliOutFolder.isDefined) {
         if (!spec.skipGeneration) {
           createFolder("C++/CLI", spec.cppCliOutFolder.get)

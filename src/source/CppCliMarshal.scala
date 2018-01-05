@@ -41,10 +41,6 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
     s"${helperClass(tm)}::FromCpp($expr)"
   }
 
-  private def using(fqName: String) = {
-    DeclRef(s"using $fqName;", Some(spec.cppCliNamespace))
-  }
-
   def include(ident: String, isExtendedRecord: Boolean = false): String = {
     q(spec.csIdentStyle.file(ident) + "." + spec.cppHeaderExt)
   }
@@ -63,16 +59,6 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
         List()
       }
     case e: MExtern => List(ImportRef(e.cs.header))
-    case _ => List()
-  }
-
-  def references(d: DerivingType): Seq[SymbolReference] = d match {
-    case DerivingType.Eq =>
-      List(
-        using("System::IEquatable"),
-        using("System::Object"),
-        using("System::String")
-      )
     case _ => List()
   }
 

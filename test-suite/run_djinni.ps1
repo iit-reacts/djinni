@@ -21,25 +21,6 @@ $gen_stamp = "$temp_out\gen.stamp"
 
 $deps_file = "$temp_out\$djinnifile.deps"
 
-echo "base_dir = $base_dir"
-echo "djinni_dir = $djinni_dir"
-
-echo "temp_out = $temp_out"
-echo "in = $in"
-echo "wchar_in = $wchar_in"
-
-echo "temp_out_relative = $temp_out_relative"
-echo "in_relative = $in_relative"
-echo "wchar_in_relative = $wchar_in_relative"
-
-echo "cpp_out = $cpp_out"
-echo "cs_out = $cs_out"
-echo "cppcli_out = $cppcli_out"
-
-echo "gen_stamp = $gen_stamp"
-
-echo "deps_file = $deps_file"
-
 if ($clean) {
     # TODO!
     echo "cleaning..."
@@ -69,7 +50,6 @@ cd $base_dir
     --cpp-extended-record-include-prefix "../../handwritten-src/cpp/" `
     --cpp-use-wide-strings true `
     `
-    --cs-out "$temp_out_relative/cs" `
     --cs-namespace Djinni.TestSuite `
     --cppcli-out "$temp_out_relative/cppcli" `
     `
@@ -87,7 +67,6 @@ cd $base_dir
     --cpp-optional-header "\`"../../handwritten-src/cpp/optional.hpp\`"" `
     --cpp-extended-record-include-prefix "../../handwritten-src/cpp/" `
     `
-    --cs-out "$temp_out_relative/cs" `
     --cs-namespace Djinni.TestSuite `
     --cppcli-out "$temp_out_relative/cppcli" `
     `
@@ -106,7 +85,6 @@ cp "$base_dir/djinni/yaml-test.djinni" "$temp_out/yaml"
     --cpp-optional-template "std::experimental::optional" `
     --cpp-optional-header "\`"../../handwritten-src/cpp/optional.hpp\`"" `
     `
-    --cs-out "$temp_out_relative/cs" `
     --cs-namespace Djinni.TestSuite `
     --cppcli-out "$temp_out_relative/cppcli" `
     `

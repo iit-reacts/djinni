@@ -19,7 +19,6 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     val hppFwds = new mutable.TreeSet[String]()
     val cpp = new mutable.TreeSet[String]()
 
-    def find(d: DerivingType) = for(r <- marshal.references(d)) addRefs(r)
     def find(ty: TypeRef) { find(ty.resolved) }
     def find(tm: MExpr) {
       tm.args.foreach(find)
@@ -29,7 +28,6 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
 
     private def addRefs(r: SymbolReference) = r match {
       case ImportRef(arg) => hpp.add("#include " + arg) // TODO add to `cpp`
-      case DeclRef(decl, Some(spec.cppCliNamespace)) => hppFwds.add(decl)
       case DeclRef(_, _) =>
     }
   }
@@ -136,7 +134,6 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     refs.find(MString) // for: String^ ToString();
     r.fields.foreach(f => refs.find(f.ty))
     r.consts.foreach(c => refs.find(c.ty))
-    r.derivingTypes.foreach(d => refs.find(d))
 
     def call(f: Field) = {
       f.ty.resolved.base match {
@@ -160,7 +157,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       if (r.derivingTypes.contains(DerivingType.Ord))
         interfaces += s"System::IComparable<$self^>"
       if (r.derivingTypes.contains(DerivingType.Eq))
-        interfaces += s"IEquatable<$self^>"
+        interfaces += s"System::IEquatable<$self^>"
       val inheritanceList = if (interfaces.isEmpty) "" else interfaces.mkString(" : ", ", ", "")
 
       w.w(s"public ref class $self$inheritanceList").bracedSemi {
@@ -190,7 +187,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         if (r.derivingTypes.contains(DerivingType.Eq)) {
           w.wl
           w.wl(s"virtual bool Equals($self^ other);")
-          w.wl("bool Equals(Object^ obj) override;")
+          w.wl("bool Equals(System::Object^ obj) override;")
           w.wl("int GetHashCode() override;")
         }
 
@@ -261,7 +258,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         }
 
         w.wl
-        w.w(s"bool $self::Equals(Object^ obj)").braced {
+        w.w(s"bool $self::Equals(System::Object^ obj)").braced {
           w.wl("if (ReferenceEquals(nullptr, obj)) return false;")
           w.wl("if (ReferenceEquals(this, obj)) return true;")
           w.wl(s"return obj->GetType() == GetType() && Equals(($self^) obj);")
