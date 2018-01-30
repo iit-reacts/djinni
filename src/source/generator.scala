@@ -257,7 +257,7 @@ abstract class Generator(spec: Spec)
 
   protected def createFile(folder: File, fileName: String, makeWriter: OutputStreamWriter => IndentWriter, f: IndentWriter => Unit): Unit = {
     if (spec.outFileListWriter.isDefined) {
-      spec.outFileListWriter.get.write(new File(folder, fileName).getPath + "\n")
+      spec.outFileListWriter.get.write(util.toUnixPath(new File(folder, fileName)) + "\n")
     }
     if (spec.skipGeneration) {
       return

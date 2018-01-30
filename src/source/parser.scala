@@ -310,7 +310,7 @@ def normalizePath(path: File) : File = {
 def parseFile(idlFile: File, inFileListWriter: Option[Writer]): Seq[TypeDecl] = {
   val normalizedIdlFile = normalizePath(idlFile)
   if (inFileListWriter.isDefined) {
-    inFileListWriter.get.write(normalizedIdlFile + "\n")
+    inFileListWriter.get.write(util.toUnixPath(normalizedIdlFile) + "\n")
   }
 
   visitedFiles.add(normalizedIdlFile)
