@@ -18,6 +18,9 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     val hpp = new mutable.TreeSet[String]()
     val hppFwds = new mutable.TreeSet[String]()
     val cpp = new mutable.TreeSet[String]()
+    val cppPrefix = spec.cppIncludePrefix
+
+    hpp.add("#include " + q(cppPrefix + spec.cppFileIdentStyle(name) + "." + spec.cppHeaderExt))
 
     def find(ty: TypeRef) { find(ty.resolved) }
     def find(tm: MExpr) {
@@ -147,8 +150,6 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
 
     val self = marshal.typename(ident, r)
     val cppSelf = cppMarshal.fqTypename(ident, r)
-
-    refs.hpp.add("#include " + q(spec.cppFileIdentStyle(ident) + "." + spec.cppHeaderExt))
 
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
       writeDoc(w, doc)
@@ -322,7 +323,6 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     val self = marshal.typename(ident, i)
     val cppSelf = cppMarshal.fqTypename(ident, i)
 
-    refs.hpp.add("#include " + q(spec.cppFileIdentStyle(ident) + "." + spec.cppHeaderExt))
     refs.hpp.add("#include <memory>")
 
     val methodNamesInScope = i.methods.map(m => idCs.method(m.ident))
@@ -371,7 +371,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
           case MMap =>
             tm.args.foreach(a => include(a))
           case d: MDef =>
-            refs.cpp.add("#include " + q(spec.cppFileIdentStyle(d.name) + "." + spec.cppHeaderExt))
+            refs.cpp.add("#include " + q(spec.cppIncludePrefix + spec.cppFileIdentStyle(d.name) + "." + spec.cppHeaderExt))
           case _ =>
         }
         include(p.ty.resolved)
