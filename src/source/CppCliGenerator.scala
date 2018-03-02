@@ -151,6 +151,8 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     val self = marshal.typename(ident, r)
     val cppSelf = cppMarshal.fqTypename(ident, r)
 
+    val fieldNamesInScope = r.fields.map(f => idCs.property(f.ident))
+
     writeCppCliHppFile(ident, origin, refs.hpp, refs.hppFwds, w => {
       writeDoc(w, doc)
 
@@ -169,7 +171,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         // Properties.
         for (f <- r.fields) {
           w.wl
-          val retType = s"${marshal.fieldType(f.ty)}"
+          val retType = s"${marshal.fqFieldType(f.ty.resolved, fieldNamesInScope)}"
           w.wl(s"property $retType ${idCs.property(f.ident)}").braced {
             w.wl(s"$retType get();")
           }
@@ -178,7 +180,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         // Constructor.
         if (r.fields.nonEmpty) {
           w.wl
-          writeAlignedCall(w, self + "(", r.fields, ")", f => marshal.fieldType(f.ty) + " " + idCs.local(f.ident))
+          writeAlignedCall(w, self + "(", r.fields, ")", f => marshal.fqFieldType(f.ty.resolved, fieldNamesInScope) + " " + idCs.local(f.ident))
           w.wl(";")
         }
 
@@ -211,7 +213,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         // Field definitions.
         for (f <- r.fields) {
           writeDoc(w, f.doc)
-          w.wl(s"${marshal.fieldType(f.ty)} ${idCs.field(f.ident)};")
+          w.wl(s"${marshal.fqFieldType(f.ty.resolved, fieldNamesInScope)} ${idCs.field(f.ident)};")
         }
       }
     })
@@ -222,7 +224,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
     writeCppCliCppFile(ident, origin, refs.cpp, w => {
       // Constructor.
       if (r.fields.nonEmpty) {
-        writeAlignedCall(w, self + "::" + self + "(", r.fields, ")", f => marshal.fieldType(f.ty) + " " + idCs.local(f.ident))
+        writeAlignedCall(w, self + "::" + self + "(", r.fields, ")", f => marshal.fqFieldType(f.ty.resolved, fieldNamesInScope) + " " + idCs.local(f.ident))
         w.wl
         val init = (f: Field) => idCs.field(f.ident) + "(" + idCs.local(f.ident) + ")"
         w.wl(": " + init(r.fields.head))

@@ -13,7 +13,7 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
   def typename(ty: TypeRef, needsHandle: Boolean): String = toCppCliType(ty, None, Seq(), needsHandle)
   def typename(name: String, ty: TypeDef) = idCs.ty(name)
 
-  override def fqTypename(tm: meta.MExpr): String = typename(tm)
+  override def fqTypename(tm: meta.MExpr): String = toCppCliType(tm, Some(spec.csNamespace.replace(".", "::")), Seq(), true)
 
   override def paramType(tm: meta.MExpr): String = typename(tm)
   def paramType(tm: MExpr, scopeSymbols: Seq[String]): String = toCppCliType(tm, None, scopeSymbols, true)
@@ -29,6 +29,7 @@ class CppCliMarshal(spec: Spec) extends Marshal(spec) {
   override def fieldType(tm: meta.MExpr): String = typename(tm)
 
   override def fqFieldType(tm: meta.MExpr): String = throw new AssertionError("not applicable")
+  def fqFieldType(tm: meta.MExpr, scopeSymbols: Seq[String]): String = toCppCliType(tm, None, scopeSymbols, true)
 
   def helperClass(name: String) = idCpp.ty(name)
   private def helperClass(tm: MExpr): String = helperName(tm) + helperTemplates(tm)
