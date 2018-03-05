@@ -202,10 +202,10 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         w.wl
         w.wlOutdent("internal:")
         w.wl(s"using CppType = $cppSelf;")
-        w.wl(s"using CsType = $self;");
+        w.wl(s"using CsType = $self^;");
         w.wl
-        w.wl(s"static CppType ToCpp(CsType^ cs);")
-        w.wl(s"static CsType^ FromCpp(const CppType& cpp);")
+        w.wl(s"static CppType ToCpp(CsType cs);")
+        w.wl(s"static CsType FromCpp(const CppType& cpp);")
 
         w.wl
         w.wlOutdent("private:")
@@ -302,14 +302,14 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
       val CppType = s"$self::CppType"
       val CsType = s"$self::CsType"
       w.wl
-      w.wl(s"$CppType $self::ToCpp($CsType^ cs)").braced {
+      w.wl(s"$CppType $self::ToCpp($CsType cs)").braced {
         w.wl("ASSERT(cs != nullptr);")
         writeAlignedCall(w, "return {", r.fields, "}", f => marshal.toCpp(f.ty, "cs->" + idCs.property(f.ident)))
         w.wl(";")
       }
       w.wl
-      w.wl(s"$CsType^ $self::FromCpp(const $CppType& cpp)").braced {
-        writeAlignedCall(w, s"return gcnew ${CsType}(", r.fields, ")", f => marshal.fromCpp(f.ty, "cpp." + idCpp.field(f.ident)))
+      w.wl(s"$CsType $self::FromCpp(const $CppType& cpp)").braced {
+        writeAlignedCall(w, s"return gcnew $self(", r.fields, ")", f => marshal.fromCpp(f.ty, "cpp." + idCpp.field(f.ident)))
         w.wl(";")
       }
     })
