@@ -81,7 +81,7 @@ struct Date {
     using CsType = System::DateTime;
 
     using Ticks = std::chrono::duration<int64_t, std::ratio<1, 10000000>>;
-    static const auto TicksBeforeEpoch = 22089888000000000;
+    static const auto TicksBeforeEpoch = 621355968000000000;
 
     static CppType ToCpp(CsType date) {
         auto ticks = Ticks(date.Ticks - TicksBeforeEpoch);
