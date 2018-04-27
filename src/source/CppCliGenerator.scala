@@ -243,7 +243,17 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
 
       w.wl
       w.wl(s"System::String^ $self::ToString()").braced {
-        w.wl(s"""return "$self[TODO]"; // TODO""")
+        val placeholders = r.fields.view.zipWithIndex.map {
+          case (field, index) => s"${idCs.property(field.ident)}{$index}"
+        }
+        val formatStr = placeholders.mkString(s"$self{", ", ", "}")
+        val call = "return System::String::Format("
+        w.w(s"""$call"$formatStr"""")
+        r.fields.foreach(f => {
+          w.wl(",")
+          w.w(" " * call.length + idCs.property(f.ident))
+        })
+        w.wl(");")
       }
 
       if (r.derivingTypes.contains(DerivingType.Eq)) {
