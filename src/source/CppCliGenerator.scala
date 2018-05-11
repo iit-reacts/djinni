@@ -246,7 +246,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         val placeholders = r.fields.view.zipWithIndex.map {
           case (field, index) => s"${idCs.property(field.ident)}{$index}"
         }
-        val formatStr = placeholders.mkString(s"$self{", ", ", "}")
+        val formatStr = placeholders.mkString(s"$self {{", ", ", "}}")
         val call = "return System::String::Format("
         w.w(s"""$call"$formatStr"""")
         r.fields.foreach(f => {
