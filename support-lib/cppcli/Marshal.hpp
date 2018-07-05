@@ -54,11 +54,19 @@ struct String {
 
     static CppType ToCpp(CsType string) {
         ASSERT(string != nullptr);
-        return msclr::interop::marshal_as<CppType>(string);
+        cli::array<System::Byte>^ bytes = System::Text::Encoding::UTF8->GetBytes(string);
+        CppType cpp_str;
+        cpp_str.resize(bytes->Length);
+        System::Runtime::InteropServices::Marshal::Copy(bytes,0,System::IntPtr(const_cast<char*>(cpp_str.data())),cpp_str.length());
+        return cpp_str;
     }
 
     static CsType FromCpp(const CppType& string) {
-        return msclr::interop::marshal_as<CsType>(string);
+      cli::array<System::Byte>^ bytes = gcnew cli::array<System::Byte>(string.length());
+      for(size_t i=0; i< string.length(); i++) {
+        bytes[i] = string[i];
+      }
+      return System::Text::Encoding::UTF8->GetString(bytes);
     }
 };
 
