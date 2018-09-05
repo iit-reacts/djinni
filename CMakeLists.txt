@@ -128,9 +128,15 @@ if (DJINNI_WITH_CPPCLI)
   if (NOT MSVC)
     message(FATAL_ERROR "Enabling DJINNI_WITH_CPPCLI without MSVC is not supported")
   endif ()
+
+  if (NOT DJINNI_STATIC_LIB)
+    message(FATAL_ERROR "DJINNI_WITH_CPPCLI requires DJINNI_STATIC_LIB to be true")
+  endif()
+
   # D8016: '/clr' and '/RTC1' command-line options are incompatible
   string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-#  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")  # TODO Why do we need this?
+
   target_include_directories(djinni_support_lib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/support-lib/cppcli/>")
   target_sources(djinni_support_lib PRIVATE ${SRC_CPPCLI})
   source_group("cppcli" FILES ${SRC_CPPCLI})
