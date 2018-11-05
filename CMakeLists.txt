@@ -5,7 +5,7 @@ project(djinni_support_lib)
 include(GNUInstallDirs)
 include(CMakeParseArguments)
 
-function(add_djinni_binding)
+function(add_djinni_binding2)
   set(options )
   set(oneValueArgs
     OUTPUT
@@ -137,10 +137,11 @@ if (DJINNI_WITH_CPPCLI)
   string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
   string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")  # TODO Why do we need this?
 
-  target_include_directories(djinni_support_lib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/support-lib/cppcli/>")
-  target_sources(djinni_support_lib PRIVATE ${SRC_CPPCLI})
+  add_library(djinni_cppcli_support_lib STATIC ${SRC_SHARED})
+  target_include_directories(djinni_cppcli_support_lib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/support-lib/cppcli/>")
+  target_sources(djinni_cppcli_support_lib PRIVATE ${SRC_CPPCLI})
   source_group("cppcli" FILES ${SRC_CPPCLI})
-  set_target_properties(djinni_support_lib PROPERTIES
+  set_target_properties(djinni_cppcli_support_lib PROPERTIES
     VS_DOTNET_REFERENCES "System;System.Core"
     COMPILE_FLAGS "/clr /EHa"
   )
@@ -152,7 +153,7 @@ endif()
 
 # Store path to the "run" executable so it can be passed as argument to add_custom_command() scripts
 if (MSVC)
-  set(DJINNI_RUN "POWERSHELL -ExecutionPolicy Bypass ${CMAKE_CURRENT_SOURCE_DIR}/src/run.ps1" CACHE STRING "Path to the Djinni generator executable.")
+  set(DJINNI_RUN powershell -ExecutionPolicy Bypass ${CMAKE_CURRENT_SOURCE_DIR}/src/run.ps1 CACHE STRING "Path to the Djinni generator executable.")
 else()
   set(DJINNI_RUN "${CMAKE_CURRENT_SOURCE_DIR}/src/run" CACHE FILEPATH "Path to the Djinni generator executable.")
 endif ()
