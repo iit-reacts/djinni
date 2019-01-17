@@ -95,6 +95,7 @@ set_target_properties(djinni_support_lib PROPERTIES
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED true
   CXX_EXTENSIONS false
+  LINKER_LANGUAGE CXX
 )
 
 # Objective-C support
