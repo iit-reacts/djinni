@@ -73,12 +73,17 @@ JNIEnv * jniGetThreadEnv() {
     assert(g_cachedJVM);
     JNIEnv * env = nullptr;
     jint get_res = g_cachedJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
-    if (get_res != 0 || !env) {
+    if (get_res == JNI_EDETACHED) {
 #ifdef JNI_VERSION_1_8
-        get_res = g_cachedJVM->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr);
+      get_res = g_cachedJVM->AttachCurrentThread(reinterpret_cast<void**>(&env), nullptr);
 #else
-        get_res = g_cachedJVM->AttachCurrentThread(&env, nullptr);
+      get_res = g_cachedJVM->AttachCurrentThread(&env, nullptr);
 #endif
+      thread_local struct DetachOnExit {
+        ~DetachOnExit() { g_cachedJVM->DetachCurrentThread(); }
+      } detachOnExit;
+    }
+    if (get_res != 0 || !env) {
         if (get_res != 0 || !env) {
             // :(
             std::abort();
