@@ -134,17 +134,13 @@ if (DJINNI_WITH_CPPCLI)
     message(FATAL_ERROR "DJINNI_WITH_CPPCLI requires DJINNI_STATIC_LIB to be true")
   endif()
 
-  # D8016: '/clr' and '/RTC1' command-line options are incompatible
-  string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")  # TODO Why do we need this?
-
   add_library(djinni_cppcli_support_lib STATIC ${SRC_SHARED})
   target_include_directories(djinni_cppcli_support_lib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/support-lib/cppcli/>")
   target_sources(djinni_cppcli_support_lib PRIVATE ${SRC_CPPCLI})
   source_group("cppcli" FILES ${SRC_CPPCLI})
   set_target_properties(djinni_cppcli_support_lib PROPERTIES
     VS_DOTNET_REFERENCES "System;System.Core"
-    COMPILE_FLAGS "/clr /EHa"
+    COMMON_LANGUAGE_RUNTIME ""
   )
 endif()
 
