@@ -163,6 +163,7 @@ class CppCliGenerator(spec: Spec) extends Generator(spec) {
         interfaces += s"System::IEquatable<$self^>"
       val inheritanceList = if (interfaces.isEmpty) "" else interfaces.mkString(" : ", ", ", "")
 
+      w.wl("[System::Serializable]")
       w.w(s"public ref class $self$inheritanceList").bracedSemi {
         w.wlOutdent("public:")
 
