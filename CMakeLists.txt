@@ -154,3 +154,6 @@ if (MSVC)
 else()
   set(DJINNI_RUN "${CMAKE_CURRENT_SOURCE_DIR}/src/run" CACHE FILEPATH "Path to the Djinni generator executable.")
 endif ()
+
+file(GLOB DJINNI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/source/*.scala)
+set(DJINNI_SOURCES ${DJINNI_SOURCES} PARENT_SCOPE)
