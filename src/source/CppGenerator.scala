@@ -204,8 +204,9 @@ class CppGenerator(spec: Spec) extends Generator(spec) {
           w.wl(s"friend bool operator>=(const $actualSelf& lhs, const $actualSelf& rhs);")
         }
 
-        // Constructor.
+        // Constructors
         if(r.fields.nonEmpty) {
+          //Initialize fields
           w.wl
           writeAlignedCall(w, actualSelf + "(", r.fields, ")", f => marshal.fieldType(f.ty) + " " + idCpp.local(f.ident) + "_")
           w.wl
@@ -213,7 +214,16 @@ class CppGenerator(spec: Spec) extends Generator(spec) {
           w.wl(": " + init(r.fields.head))
           r.fields.tail.map(f => ", " + init(f)).foreach(w.wl)
           w.wl("{}")
+
+          //Empty, default-init
+          w.wl
+          w.wl(actualSelf + "()")
+          val init_default =  (f: Field) => idCpp.field(f.ident) + "()"
+          w.wl(": " + init_default(r.fields.head))
+          r.fields.tail.map(f => ", " + init_default(f)).foreach(w.wl)
+          w.wl("{}")
         }
+        
 
         if (r.ext.cpp) {
           w.wl
