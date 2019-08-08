@@ -1,12 +1,18 @@
 # Djinni
 
 Djinni is a tool for generating cross-language type declarations and interface bindings. It's
-designed to connect C++ with either Java or Objective-C. Python support is available in an experimental version on the `python` branch.
+designed to connect C++ with either Java or Objective-C. Python support is available in an
+experimental version on the `python` branch.
 
-We at Dropbox use Djinni to interface cross-platform C++ library code with platform-specific
-Java and Objective-C on Android and iOS.
+Djinni can be used to interface cross-platform C++ library code with platform-specific Java and
+Objective-C on Android and iOS.  We announced Djinni at CppCon 2014. You can see the
+[slides](https://bit.ly/djinnitalk) and [video](https://bit.ly/djinnivideo).  For more info about
+Djinni and how others are using it, check out the community links at the end of this document.
 
-We announced Djinni at CppCon 2014. You can see the [slides](https://bit.ly/djinnitalk) and [video](https://bit.ly/djinnivideo).  For more info about Djinni and how others are using it, check out the community links at the end of this document.
+__Maintenance note:__ This repo is stable but no longer actively maintained.  No further development
+is planned, and no new feature PRs will be merged.  Bug fixes may be merged on a volunteer basis.
+If you have questions or want to talk to other users of Djinni, you can join the Slack community
+via the link at the end of this document.
 
 ## Main Features
 - Generates parallel C++, Java and Objective-C type definitions from a single interface
@@ -110,6 +116,7 @@ When the Djinni file(s) are ready, from the command line or a bash script you ca
        \
        --jni-out JNI_OUTPUT_FOLDER \
        --ident-jni-class NativeFooBar \ # This adds a "Native" prefix to JNI class
+       --ident-jni-file NativeFooBar \ # This adds a prefix to the JNI filenames otherwise the cpp and jni filenames are the same.
        \
        --objc-out OBJC_OUTPUT_FOLDER \
        --objc-type-prefix DB \ # Apple suggests Objective-C classes have a prefix for each defined type.
@@ -492,6 +499,29 @@ java -jar $DJINNI_JAR_DIR/djinni-assembly-0.1-SNAPSHOT.jar \
 
 *Note*: The `all` target of the main `Makefile` includes the `djinni_jar` target.
 
+## Generate an iOS universal binary of the support library.
+
+The `ios-build-support-lib.sh` helps you to build an universal static library for iOS platforms.
+It uses the platform file of the [ios-cmake](https://github.com/leetal/ios-cmake) repository.
+
+It basically creates one universal static library per `IOS_PLATFORM` variable and uses `lipo` 
+to merge all the files in one.
+
+There is basically two variables you would like to modify:
+
+- `BUILD_APPLE_ARCHITECTURES`: Specifies which `IOS_PLATFORM` to build.
+For more informations, take a look at https://github.com/leetal/ios-cmake.
+
+- `ENABLE_BITCODE`: enable/disable the bitcode generation.
+
+## Android Parcelable records
+
+Djinni supports generating records that implements `android.os.parcelable`.
+
+In order to do that, there are two steps needed:
+- deriving the records that should be parcelable with the keyword parcelable: `deriving(parcelable)`
+- run Djinni with the following flag `--java-implement-android-os-parcelable true`
+
 ## Community Links
 
 * Join the discussion with other developers at the [Mobile C++ Slack Community](https://mobilecpp.herokuapp.com/)
@@ -511,6 +541,5 @@ java -jar $DJINNI_JAR_DIR/djinni-assembly-0.1-SNAPSHOT.jar \
 - Andrew Twyman
 
 ## Contacts
-- Xianwen Chen - `xianwen@dropbox.com`
 - Andrew Twyman - `atwyman@dropbox.com`
 - Jacob Potter - `djinni@j4cbo.com`

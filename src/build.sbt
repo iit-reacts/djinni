@@ -1,6 +1,6 @@
 import com.typesafe.sbt.SbtStartScript
 
-scalaVersion := "2.11.0"
+scalaVersion := "2.11.12"
 
 libraryDependencies ++= Seq(
 	"org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1",
@@ -17,4 +17,4 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Xmax-classfile
 
 libraryDependencies += "com.github.scopt" %% "scopt" % "3.2.0"
 
-seq(SbtStartScript.startScriptForClassesSettings: _*)
+Seq(SbtStartScript.startScriptForClassesSettings: _*)
