@@ -2,7 +2,7 @@
 # Function definition
 #---------------------------------------------------------------------------------------------------
 
-function ThrowIfError {
+function Assert-LastExitSuccess {
     Param(
         [Parameter(Mandatory=$True)]
         [string]$message

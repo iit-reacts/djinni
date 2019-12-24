@@ -2,7 +2,7 @@
 # Preamble
 #---------------------------------------------------------------------------------------------------
 
-. $PSScriptRoot\throw-if-error.ps1
+. $PSScriptRoot\assert-exit-success.ps1
 
 #---------------------------------------------------------------------------------------------------
 # Build & run
@@ -12,4 +12,4 @@
 
 & "$PSScriptRoot\target\start.bat" $args
 
-ThrowIfError "Djinni finished with error"
+Assert-LastExitSuccess "Djinni finished with error"
