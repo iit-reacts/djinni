@@ -82,7 +82,7 @@ class ObjcppMarshal(spec: Spec) extends Marshal(spec) {
       case MMap => "Map"
       case d: MDef => throw new AssertionError("unreachable")
       case e: MExtern => throw new AssertionError("unreachable")
-      case p: MParam => throw new AssertionError("not applicable")
+      case p: MParam => helperClass(p.name)
     })
   }
 

@@ -128,7 +128,7 @@ class ObjcMarshal(spec: Spec) extends Marshal(spec) {
               case i: Interface => if(i.ext.objc) (s"id<${e.objc.typename}>", false) else (e.objc.typename, true)
               case _ => if(needRef) (e.objc.boxed, true) else (e.objc.typename, e.objc.pointer)
             }
-            case p: MParam => throw new AssertionError("Parameter should not happen at Obj-C top level")
+            case p: MParam => (idObjc.ty(p.name), true)
           }
           base
       }
